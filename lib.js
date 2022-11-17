@@ -32,10 +32,18 @@ module.exports = function Init(walletAddress, privateKey, rpcUrl) {
   const web3 = new Web3(rpcUrl);
 
   async function GetAmount(token) {
-    let contract = new web3.eth.Contract(minABI, TokenAddresses[token]);
-    decimals = await contract.methods.decimals().call();
-    balance = await contract.methods.balanceOf(walletAddress).call();
-    return balance / Math.pow(10, decimals);
+    try {
+      if (token === "ETH") {
+        const balance = await web3.eth.getBalance(walletAddress);
+        return balance / Math.pow(10, 18);
+      }
+      const contract = new web3.eth.Contract(minABI, TokenAddresses[token]);
+      const decimals = await contract.methods.decimals().call();
+      const balance = await contract.methods.balanceOf(walletAddress).call();
+      return balance / Math.pow(10, decimals);
+    } catch (e) {
+      console.log("Error occured:", e.message);
+    }
   }
 
   return {
