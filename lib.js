@@ -33,8 +33,9 @@ module.exports = function Init(walletAddress, privateKey, rpcUrl) {
 
   async function GetAmount(token) {
     let contract = new web3.eth.Contract(minABI, TokenAddresses[token]);
+    decimals = await contract.methods.decimals().call();
     balance = await contract.methods.balanceOf(walletAddress).call();
-    return balance;
+    return balance / Math.pow(10, decimals);
   }
 
   return {
