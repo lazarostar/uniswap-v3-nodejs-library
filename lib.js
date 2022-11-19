@@ -78,6 +78,8 @@ function Init(walletAddress, privateKey, rpcUrl) {
       .getPool(token0, token1, fee)
       .call();
 
+    console.log("Pool Address:", poolAddress);
+
     const pool = await createPoolInstance(poolAddress);
     const tokenPrice =
       pool.token0.address === token0 ? pool.token1Price : pool.token0Price;
