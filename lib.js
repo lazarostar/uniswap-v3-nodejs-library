@@ -1,13 +1,20 @@
-const Web3 = require("web3");
-const { Pool, FACTORY_ADDRESS, ADDRESS_ZERO } = require("@uniswap/v3-sdk");
-const { Token, SupportedChainId } = require("@uniswap/sdk-core");
+const ethers = require("ethers");
+const JSBI = require("jsbi");
+const { ADDRESS_ZERO } = require("@uniswap/v3-sdk");
+const {
+  AlphaRouter,
+  SwapType,
+  nativeOnChain,
+} = require("@uniswap/smart-order-router");
+const {
+  Token,
+  CurrencyAmount,
+  SupportedChainId,
+  TradeType,
+  Percent,
+} = require("@uniswap/sdk-core");
 
-const {
-  abi: IUniswapV3PoolABI,
-} = require("@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json");
-const {
-  abi: IUniswapV3FactoryABI,
-} = require("@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json");
+const V3_SWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
 
 const IERC20MinimalABI = [
   {
@@ -38,156 +45,203 @@ const IERC20MinimalABI = [
     outputs: [{ name: "", type: "string" }],
     type: "function",
   },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: "_spender",
+        type: "address",
+      },
+      {
+        name: "_value",
+        type: "uint256",
+      },
+    ],
+    name: "approve",
+    outputs: [
+      {
+        name: "",
+        type: "bool",
+      },
+    ],
+    payable: false,
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
-const tokens = {
-  ETH: ADDRESS_ZERO,
-  WETH: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
-  UNI: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
-  MATIC: "0x0000000000000000000000000000000000001010",
-  WMATIC: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-  DAI: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-  USDC: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-  USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+const Networks = {
+  GOERLI: SupportedChainId.GOERLI,
+  POLYGON: SupportedChainId.POLYGON,
 };
 
-function Init(walletAddress, privateKey, rpcUrl) {
-  const web3 = new Web3(rpcUrl);
+const Tokens = {
+  [Networks.GOERLI]: {
+    NATIVE: nativeOnChain(Networks.GOERLI),
+    ETH: nativeOnChain(Networks.GOERLI),
+    UNI: new Token(
+      Networks.GOERLI,
+      "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+      18,
+      "UNI",
+      "Uniswap Token"
+    ),
+  },
+  [Networks.POLYGON]: {
+    NATIVE: nativeOnChain(Networks.POLYGON),
+    MATIC: nativeOnChain(Networks.POLYGON),
+    USDT: new Token(
+      Networks.POLYGON,
+      "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+      6,
+      "USDT",
+      "Tether USD"
+    ),
+    USDC: new Token(
+      Networks.POLYGON,
+      "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+      6,
+      "USDC",
+      "Tether USD"
+    ),
+  },
+};
+
+function Init(walletAddress, privateKey, network, rpcUrl) {
+  const web3Provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+  const wallet = new ethers.Wallet(privateKey);
+  const connectedWallet = wallet.connect(web3Provider);
+  const router = new AlphaRouter({
+    chainId: network,
+    provider: web3Provider,
+  });
 
   async function GetAmount(token) {
     try {
-      if (token === ADDRESS_ZERO) {
-        const balance = await web3.eth.getBalance(walletAddress);
-        return balance / Math.pow(10, 18);
+      if (token.isNative) {
+        const balance = await web3Provider.getBalance(walletAddress);
+        return balance / Math.pow(10, token.decimals);
       }
-      const contract = new web3.eth.Contract(IERC20MinimalABI, token);
-      const decimals = await contract.methods.decimals().call();
-      const balance = await contract.methods.balanceOf(walletAddress).call();
-      return balance / Math.pow(10, decimals);
+      const contract = new ethers.Contract(
+        token.address,
+        IERC20MinimalABI,
+        web3Provider
+      );
+      const balance = await contract.balanceOf(walletAddress);
+      return balance / Math.pow(10, token.decimals);
     } catch (e) {
-      console.log("Error occured:", e.message);
+      console.log(`Error occured: ${e.message}`);
     }
   }
 
-  async function GetCurrentPrice(token0, token1, fee = 3000) {
-    const factory = new web3.eth.Contract(
-      IUniswapV3FactoryABI,
-      FACTORY_ADDRESS
-    );
-    const poolAddress = await factory.methods
-      .getPool(token0, token1, fee)
-      .call();
-
-    console.log("Pool Address:", poolAddress);
-
-    const pool = await createPoolInstance(poolAddress);
-    const tokenPrice =
-      pool.token0.address === token0 ? pool.token1Price : pool.token0Price;
-    return tokenPrice.toFixed(6);
+  async function GetCurrentPrice(token0, token1) {
+    try {
+      const token0Amount = CurrencyAmount.fromRawAmount(
+        token0,
+        JSBI.BigInt(Math.pow(10, token0.decimals))
+      );
+      const route = await router.route(
+        token0Amount,
+        token1,
+        TradeType.EXACT_INPUT,
+        {
+          type: SwapType.SWAP_ROUTER_02,
+          recipient: walletAddress,
+          slippageTolerance: new Percent(5, 100),
+          deadline: Math.floor(Date.now() / 1000 + 1800),
+        }
+      );
+      return Number(route.quote.toFixed(token1.decimals));
+    } catch (e) {
+      console.log(`Error occured: ${e.message}`);
+    }
   }
 
-  async function createPoolInstance(poolAddress) {
-    const poolContract = new web3.eth.Contract(IUniswapV3PoolABI, poolAddress);
+  async function Swap(token0, token1, amount, isOutput = false) {
+    try {
+      const [token, quoteToken] = isOutput
+        ? [token1, token0]
+        : [token0, token1];
+      const amountString = "" + amount * Math.pow(10, token.decimals);
+      const tokenAmount = CurrencyAmount.fromRawAmount(
+        token,
+        JSBI.BigInt(amountString)
+      );
 
-    const [immutables, state] = await Promise.all([
-      getPoolImmutables(poolContract),
-      getPoolState(poolContract),
-    ]);
+      console.log("Routing...");
+      const route = await router.route(
+        tokenAmount,
+        quoteToken,
+        isOutput ? TradeType.EXACT_OUTPUT : TradeType.EXACT_INPUT,
+        {
+          type: SwapType.SWAP_ROUTER_02,
+          recipient: walletAddress,
+          slippageTolerance: new Percent(5, 100),
+          deadline: Math.floor(Date.now() / 1000 + 1800),
+        }
+      );
 
-    const token0Contract = new web3.eth.Contract(
-      IERC20MinimalABI,
-      immutables.token0
-    );
-    const [decimals0, symbol0, name0] = await Promise.all([
-      token0Contract.methods.decimals().call(),
-      token0Contract.methods.symbol().call(),
-      token0Contract.methods.name().call(),
-    ]);
+      const quoteAmountString = route.quote
+        .multiply(Math.pow(10, quoteToken.decimals))
+        .toFixed(0);
+      console.log(`quoteAmountString: ${quoteAmountString}`);
 
-    const token1Contract = new web3.eth.Contract(
-      IERC20MinimalABI,
-      immutables.token1
-    );
-    const [decimals1, symbol1, name1] = await Promise.all([
-      token1Contract.methods.decimals().call(),
-      token1Contract.methods.symbol().call(),
-      token1Contract.methods.name().call(),
-    ]);
+      if (!token0.isNative) {
+        const token0Contract = new ethers.Contract(
+          token0.address,
+          IERC20MinimalABI,
+          web3Provider
+        );
+        console.log("Collecting fee data...");
+        const feeData = await web3Provider.getFeeData();
+        console.log("Approving...");
+        const approvalTx = await token0Contract
+          .connect(connectedWallet)
+          .approve(
+            V3_SWAP_ROUTER_ADDRESS,
+            isOutput ? quoteAmountString : amountString,
+            {
+              gasPrice: feeData.gasPrice.mul(110).div(100),
+            }
+          );
+        await approvalTx.wait();
+      }
 
-    const TokenA = new Token(
-      SupportedChainId.POLYGON,
-      immutables.token0,
-      Number(decimals0),
-      symbol0,
-      name0
-    );
+      const nonce = await web3Provider.getTransactionCount(walletAddress);
+      console.log(`Nonce: ${nonce}`);
 
-    const TokenB = new Token(
-      SupportedChainId.POLYGON,
-      immutables.token1,
-      Number(decimals1),
-      symbol1,
-      name1
-    );
+      const multicallTx = {
+        nonce: nonce,
+        data: route.methodParameters.calldata,
+        to: V3_SWAP_ROUTER_ADDRESS,
+        from: walletAddress,
+        value: token0.isNative
+          ? ethers.BigNumber.from(isOutput ? quoteAmountString : amountString)
+          : 0,
+        gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
+        gasLimit: ethers.BigNumber.from(route.estimatedGasUsed)
+          .mul(300)
+          .div(100),
+        chainId: network,
+      };
 
-    const pool = new Pool(
-      TokenA,
-      TokenB,
-      Number(immutables.fee),
-      state.sqrtPriceX96.toString(),
-      state.liquidity.toString(),
-      Number(state.tick)
-    );
+      const signedTx = await wallet.signTransaction(multicallTx);
 
-    return pool;
-  }
+      const tx = await web3Provider.sendTransaction(signedTx);
+      const result = await tx.wait();
 
-  async function getPoolImmutables(poolContract) {
-    const [factory, token0, token1, fee, tickSpacing, maxLiquidityPerTick] =
-      await Promise.all([
-        poolContract.methods.factory().call(),
-        poolContract.methods.token0().call(),
-        poolContract.methods.token1().call(),
-        poolContract.methods.fee().call(),
-        poolContract.methods.tickSpacing().call(),
-        poolContract.methods.maxLiquidityPerTick().call(),
-      ]);
-
-    const immutables = {
-      factory,
-      token0,
-      token1,
-      fee,
-      tickSpacing,
-      maxLiquidityPerTick,
-    };
-    return immutables;
-  }
-
-  async function getPoolState(poolContract) {
-    const [liquidity, slot] = await Promise.all([
-      poolContract.methods.liquidity().call(),
-      poolContract.methods.slot0().call(),
-    ]);
-
-    const PoolState = {
-      liquidity,
-      sqrtPriceX96: slot[0],
-      tick: slot[1],
-      observationIndex: slot[2],
-      observationCardinality: slot[3],
-      observationCardinalityNext: slot[4],
-      feeProtocol: slot[5],
-      unlocked: slot[6],
-    };
-
-    return PoolState;
+      return result;
+    } catch (e) {
+      console.log(`Error occured: ${e.message}`);
+    }
   }
 
   return {
     GetAmount,
     GetCurrentPrice,
+    Swap,
+    Tokens: Tokens[network],
   };
 }
 
-module.exports = { Init, tokens };
+module.exports = { Init, Networks };
