@@ -12,6 +12,7 @@ const {
   SupportedChainId,
   TradeType,
   Percent,
+  Fraction,
 } = require("@uniswap/sdk-core");
 
 const V3_SWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
@@ -199,7 +200,12 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
           .connect(connectedWallet)
           .approve(
             V3_SWAP_ROUTER_ADDRESS,
-            isOutput ? quoteAmountString : amountString,
+            isOutput
+              ? route.quote
+                  .multiply(Math.pow(10, quoteToken.decimals))
+                  .multiply(new Fraction(105, 100))
+                  .toFixed(0)
+              : amountString,
             {
               gasPrice: feeData.gasPrice.mul(110).div(100),
             }
