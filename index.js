@@ -28,14 +28,19 @@ async function main() {
   //   50000,
   //   32936000000000
   // );
+  // console.log(result);
 
   // 5. Test CreatePoolPosition function
-  const result = await lib.ClosePoolPosition(
-    539327,
-    lib.Tokens.USDC,
-    lib.Tokens.WETH,
-    500
-  );
+  // const result = await lib.ClosePoolPosition(
+  //   539327,
+  //   lib.Tokens.USDC,
+  //   lib.Tokens.WETH,
+  //   500
+  // );
+  // console.log(result);
+
+  // 6. Test GetNFTList function
+  const result = await lib.GetNFTList(false);
   console.log(result);
 
   return 0;

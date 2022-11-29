@@ -15,6 +15,9 @@ const {
   abi: IUniswapV3PoolABI,
 } = require("@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json");
 const {
+  abi: INonfungiblePositionManagerABI,
+} = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json");
+const {
   AlphaRouter,
   SwapType,
   SwapToRatioStatus,
@@ -135,6 +138,15 @@ const Tokens = {
       "USD Coin"
     ),
   },
+};
+
+const getTokenByAddress = (address, network) => {
+  Object.values(Tokens[network]).find;
+  for (let symbol in Tokens[network]) {
+    if (Tokens[network][symbol].address === address)
+      return Tokens[network][symbol];
+  }
+  return null;
 };
 
 async function getPoolImmutables(poolContract) {
@@ -605,12 +617,58 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return result;
   }
 
+  async function GetNFTList(hideClosedPositions = true) {
+    const contract = new ethers.Contract(
+      V3_POSITION_NFT_ADDRESS,
+      INonfungiblePositionManagerABI,
+      web3Provider
+    );
+    const size = (await contract.balanceOf(walletAddress)).toNumber();
+    console.log(size);
+
+    const promiseList = [];
+    for (let i = 0; i < size; i++) {
+      promiseList.push(
+        contract
+          .tokenOfOwnerByIndex(walletAddress, i)
+          .then((val) => val.toNumber())
+      );
+    }
+    const tokenIdList = await Promise.all(promiseList);
+    const positionPromiseList = [];
+    for (let i = 0; i < size; i++) {
+      positionPromiseList.push(contract.positions(tokenIdList[i]));
+    }
+    const positionListFromContract = await Promise.all(positionPromiseList);
+    const positionList = positionListFromContract.map((position, i) => ({
+      id: tokenIdList[i],
+      minTick: position.tickLower,
+      maxTick: position.tickUpper,
+      isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
+      isInRange: true,
+      token0: getTokenByAddress(position.token0, network).symbol,
+      token1: getTokenByAddress(position.token1, network).symbol,
+      feeTier: position.fee / 10000 + "%",
+      liquidity: position.liquidity.toNumber(),
+      unclaimedFee0: 0,
+      unclaimedFee1: 0,
+      minPrice: 0,
+      maxPrice: 0,
+      currentPrice: 0,
+    }));
+    return hideClosedPositions
+      ? positionList.filter((position) => position.isActivePosition)
+      : positionList;
+    // return positionListFromContract;
+  }
+
   return {
     GetAmount,
     GetCurrentPrice,
     Swap,
     CreatePoolPosition,
     ClosePoolPosition,
+    GetNFTList,
     Tokens: Tokens[network],
   };
 }
