@@ -17,7 +17,17 @@ async function main() {
   // console.log(`1 MATIC is ${price} USDC`);
 
   // 3. Test Swap function
-  const result = await lib.Swap(lib.Tokens.USDC, lib.Tokens.MATIC, 0.1, true);
+  // const result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1, true);
+  // console.log(result);
+
+  // 4. Test CreatePoolPosition function
+  const result = await lib.CreatePoolPosition(
+    lib.Tokens.USDC,
+    lib.Tokens.WETH,
+    500,
+    50000,
+    32936000000000
+  );
   console.log(result);
 
   return 0;
