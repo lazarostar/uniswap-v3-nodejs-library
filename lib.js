@@ -465,6 +465,15 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     //   return result;
     // }
 
+    const tickLower =
+      nearestUsableTick(state.tick, immutables.tickSpacing) -
+      immutables.tickSpacing * 2;
+    const tickUpper =
+      nearestUsableTick(state.tick, immutables.tickSpacing) +
+      immutables.tickSpacing * 2;
+
+    console.log(tickLower, tickUpper);
+
     const { calldata, value } = NonfungiblePositionManager.addCallParameters(
       new Position({
         pool,
@@ -506,7 +515,94 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     const result = await tx.wait();
 
     const tokenId = Number.parseInt(result.logs[6].topics[1], 16);
-    return tokenId;
+    return { tokenId, token0, token1, feeTier };
+  }
+
+  async function ClosePoolPosition(tokenId, token0, token1, feeTier) {
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+
+    console.log("Getting pool...");
+    const poolAddress = await factoryContract.getPool(
+      token0.address,
+      token1.address,
+      feeTier
+    );
+    console.log(`Pool: ${poolAddress}`);
+
+    const poolContract = new ethers.Contract(
+      poolAddress,
+      IUniswapV3PoolABI,
+      web3Provider
+    );
+
+    const [immutables, state] = await Promise.all([
+      getPoolImmutables(poolContract),
+      getPoolState(poolContract),
+    ]);
+
+    const [TokenA, TokenB] =
+      token0.address === immutables.token0
+        ? [token0, token1]
+        : [token1, token0];
+
+    const pool = new Pool(
+      TokenA,
+      TokenB,
+      immutables.fee,
+      state.sqrtPriceX96.toString(),
+      state.liquidity.toString(),
+      state.tick
+    );
+
+    const position = new Position({
+      pool: pool,
+      tickLower: 205330,
+      tickUpper: 205370,
+      liquidity: 1000,
+    });
+
+    const { calldata, value } = NonfungiblePositionManager.removeCallParameters(
+      position,
+      {
+        tokenId: tokenId,
+        liquidityPercentage: new Percent(1),
+        slippageTolerance: new Percent(5, 100),
+        deadline: Math.floor(Date.now() / 1000 + 1800),
+        collectOptions: {
+          expectedCurrencyOwed0: CurrencyAmount.fromRawAmount(TokenA, 0),
+          expectedCurrencyOwed1: CurrencyAmount.fromRawAmount(TokenB, 0),
+          recipient: walletAddress,
+        },
+      }
+    );
+
+    const nonce = await web3Provider.getTransactionCount(walletAddress);
+    console.log(`Nonce: ${nonce}`);
+
+    const feeData = await web3Provider.getFeeData();
+
+    const multicallTx = {
+      nonce: nonce,
+      data: calldata,
+      to: V3_POSITION_NFT_ADDRESS,
+      from: walletAddress,
+      value: ethers.BigNumber.from(value),
+      gasPrice: feeData.gasPrice.mul(110).div(100),
+      gasLimit: 1_000_000,
+      chainId: network,
+    };
+
+    const signedTx = await wallet.signTransaction(multicallTx);
+    console.log(`Signed Tx: ${signedTx}`);
+
+    const tx = await web3Provider.sendTransaction(signedTx);
+    const result = await tx.wait();
+
+    return result;
   }
 
   return {
@@ -514,6 +610,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     GetCurrentPrice,
     Swap,
     CreatePoolPosition,
+    ClosePoolPosition,
     Tokens: Tokens[network],
   };
 }

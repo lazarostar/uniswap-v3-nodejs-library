@@ -21,12 +21,20 @@ async function main() {
   // console.log(result);
 
   // 4. Test CreatePoolPosition function
-  const result = await lib.CreatePoolPosition(
+  // const result = await lib.CreatePoolPosition(
+  //   lib.Tokens.USDC,
+  //   lib.Tokens.WETH,
+  //   500,
+  //   50000,
+  //   32936000000000
+  // );
+
+  // 5. Test CreatePoolPosition function
+  const result = await lib.ClosePoolPosition(
+    539327,
     lib.Tokens.USDC,
     lib.Tokens.WETH,
-    500,
-    50000,
-    32936000000000
+    500
   );
   console.log(result);
 
