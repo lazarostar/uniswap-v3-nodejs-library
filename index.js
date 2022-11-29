@@ -31,17 +31,14 @@ async function main() {
   // console.log(result);
 
   // 5. Test CreatePoolPosition function
-  // const result = await lib.ClosePoolPosition(
-  //   539327,
-  //   lib.Tokens.USDC,
-  //   lib.Tokens.WETH,
-  //   500
-  // );
+  // const result = await lib.ClosePoolPosition(539319);
   // console.log(result);
 
   // 6. Test GetNFTList function
-  const result = await lib.GetNFTList(false);
+  const result = await lib.GetNFTList(true);
   console.log(result);
+  console.log("===========");
+  console.log(`Total: ${result.length}`);
 
   return 0;
 }

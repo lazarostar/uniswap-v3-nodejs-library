@@ -530,18 +530,28 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return { tokenId, token0, token1, feeTier };
   }
 
-  async function ClosePoolPosition(tokenId, token0, token1, feeTier) {
+  async function ClosePoolPosition(tokenId) {
     const factoryContract = new ethers.Contract(
       FACTORY_ADDRESS,
       IUniswapV3FactoryABI,
       web3Provider
     );
 
+    const nftContract = new ethers.Contract(
+      V3_POSITION_NFT_ADDRESS,
+      INonfungiblePositionManagerABI,
+      web3Provider
+    );
+
+    const positionFromContract = await nftContract.positions(tokenId);
+    const token0 = getTokenByAddress(positionFromContract.token0, network);
+    const token1 = getTokenByAddress(positionFromContract.token1, network);
+
     console.log("Getting pool...");
     const poolAddress = await factoryContract.getPool(
       token0.address,
       token1.address,
-      feeTier
+      positionFromContract.fee
     );
     console.log(`Pool: ${poolAddress}`);
 
@@ -556,14 +566,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       getPoolState(poolContract),
     ]);
 
-    const [TokenA, TokenB] =
-      token0.address === immutables.token0
-        ? [token0, token1]
-        : [token1, token0];
-
     const pool = new Pool(
-      TokenA,
-      TokenB,
+      token0,
+      token1,
       immutables.fee,
       state.sqrtPriceX96.toString(),
       state.liquidity.toString(),
@@ -572,9 +577,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
 
     const position = new Position({
       pool: pool,
-      tickLower: 205330,
-      tickUpper: 205370,
-      liquidity: 1000,
+      tickLower: positionFromContract.tickLower,
+      tickUpper: positionFromContract.tickUpper,
+      liquidity: positionFromContract.liquidity,
     });
 
     const { calldata, value } = NonfungiblePositionManager.removeCallParameters(
@@ -585,8 +590,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         slippageTolerance: new Percent(5, 100),
         deadline: Math.floor(Date.now() / 1000 + 1800),
         collectOptions: {
-          expectedCurrencyOwed0: CurrencyAmount.fromRawAmount(TokenA, 0),
-          expectedCurrencyOwed1: CurrencyAmount.fromRawAmount(TokenB, 0),
+          expectedCurrencyOwed0: CurrencyAmount.fromRawAmount(token0, 0),
+          expectedCurrencyOwed1: CurrencyAmount.fromRawAmount(token1, 0),
           recipient: walletAddress,
         },
       }
