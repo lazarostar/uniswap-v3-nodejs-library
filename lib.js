@@ -35,6 +35,8 @@ const {
 const V3_SWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
 const V3_POSITION_NFT_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88";
 
+const MAX_UINT128 = ethers.BigNumber.from(2).pow(128).sub(1);
+
 const IERC20MinimalABI = [
   {
     constant: true,
@@ -537,21 +539,21 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       web3Provider
     );
 
-    const nftContract = new ethers.Contract(
+    const positionManagerContract = new ethers.Contract(
       V3_POSITION_NFT_ADDRESS,
       INonfungiblePositionManagerABI,
       web3Provider
     );
 
-    const positionFromContract = await nftContract.positions(tokenId);
-    const token0 = getTokenByAddress(positionFromContract.token0, network);
-    const token1 = getTokenByAddress(positionFromContract.token1, network);
+    const positionInfo = await positionManagerContract.positions(tokenId);
+    const token0 = getTokenByAddress(positionInfo.token0, network);
+    const token1 = getTokenByAddress(positionInfo.token1, network);
 
     console.log("Getting pool...");
     const poolAddress = await factoryContract.getPool(
       token0.address,
       token1.address,
-      positionFromContract.fee
+      positionInfo.fee
     );
     console.log(`Pool: ${poolAddress}`);
 
@@ -577,9 +579,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
 
     const position = new Position({
       pool: pool,
-      tickLower: positionFromContract.tickLower,
-      tickUpper: positionFromContract.tickUpper,
-      liquidity: positionFromContract.liquidity,
+      tickLower: positionInfo.tickLower,
+      tickUpper: positionInfo.tickUpper,
+      liquidity: positionInfo.liquidity,
     });
 
     const { calldata, value } = NonfungiblePositionManager.removeCallParameters(
@@ -664,7 +666,92 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return hideClosedPositions
       ? positionList.filter((position) => position.isActivePosition)
       : positionList;
-    // return positionListFromContract;
+  }
+
+  async function CollectUnclaimedFees(tokenId) {
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+
+    const positionManagerContract = new ethers.Contract(
+      V3_POSITION_NFT_ADDRESS,
+      INonfungiblePositionManagerABI,
+      web3Provider.getSigner(wallet.address)
+    );
+
+    const positionInfo = await positionManagerContract.positions(tokenId);
+    const token0 = getTokenByAddress(positionInfo.token0, network);
+    const token1 = getTokenByAddress(positionInfo.token1, network);
+
+    console.log("Getting pool...");
+    const poolAddress = await factoryContract.getPool(
+      token0.address,
+      token1.address,
+      positionInfo.fee
+    );
+    console.log(`Pool: ${poolAddress}`);
+
+    const poolContract = new ethers.Contract(
+      poolAddress,
+      IUniswapV3PoolABI,
+      web3Provider
+    );
+
+    const [immutables, state] = await Promise.all([
+      getPoolImmutables(poolContract),
+      getPoolState(poolContract),
+    ]);
+
+    const pool = new Pool(
+      token0,
+      token1,
+      immutables.fee,
+      state.sqrtPriceX96.toString(),
+      state.liquidity.toString(),
+      state.tick
+    );
+
+    const position = new Position({
+      pool: pool,
+      tickLower: positionInfo.tickLower,
+      tickUpper: positionInfo.tickUpper,
+      liquidity: positionInfo.liquidity,
+    });
+
+    console.log("amount0:", position.amount0.toSignificant(4));
+    console.log("amount1:", position.amount1.toSignificant(4));
+
+    const feeData = await web3Provider.getFeeData();
+    const nonce = await web3Provider.getTransactionCount(walletAddress);
+    console.log(`Nonce: ${nonce}`);
+
+    const unsignedTx =
+      await positionManagerContract.populateTransaction.collect(
+        {
+          tokenId: tokenId,
+          recipient: walletAddress,
+          amount0Max: MAX_UINT128,
+          amount1Max: MAX_UINT128,
+        },
+        {
+          nonce: nonce,
+          from: walletAddress,
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+          gasLimit: 1_000_000,
+        }
+      );
+    unsignedTx.chainId = network;
+    console.log("Unsigned Tx");
+    console.log(unsignedTx);
+
+    const signedTx = await wallet.signTransaction(unsignedTx);
+    console.log(`Signed Tx: ${signedTx}`);
+
+    const tx = await web3Provider.sendTransaction(signedTx);
+    const results = await tx.wait();
+    return results;
   }
 
   return {
@@ -674,6 +761,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     CreatePoolPosition,
     ClosePoolPosition,
     GetNFTList,
+    CollectUnclaimedFees,
     Tokens: Tokens[network],
   };
 }

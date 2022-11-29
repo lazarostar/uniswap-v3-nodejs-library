@@ -35,10 +35,14 @@ async function main() {
   // console.log(result);
 
   // 6. Test GetNFTList function
-  const result = await lib.GetNFTList(true);
+  // const result = await lib.GetNFTList(true);
+  // console.log(result);
+  // console.log("===========");
+  // console.log(`Total: ${result.length}`);
+
+  // 7. Test CollectUnclaimedFees function
+  const result = await lib.CollectUnclaimedFees(539151);
   console.log(result);
-  console.log("===========");
-  console.log(`Total: ${result.length}`);
 
   return 0;
 }
