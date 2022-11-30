@@ -647,22 +647,32 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       positionPromiseList.push(contract.positions(tokenIdList[i]));
     }
     const positionListFromContract = await Promise.all(positionPromiseList);
-    const positionList = positionListFromContract.map((position, i) => ({
-      id: tokenIdList[i],
-      minTick: position.tickLower,
-      maxTick: position.tickUpper,
-      isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
-      isInRange: true,
-      token0: getTokenByAddress(position.token0, network).symbol,
-      token1: getTokenByAddress(position.token1, network).symbol,
-      feeTier: position.fee / 10000 + "%",
-      liquidity: position.liquidity.toNumber(),
-      unclaimedFee0: 0,
-      unclaimedFee1: 0,
-      minPrice: 0,
-      maxPrice: 0,
-      currentPrice: 0,
-    }));
+    const positionList = positionListFromContract.map((position, i) => {
+      const token0 = getTokenByAddress(position.token0, network);
+      const token1 = getTokenByAddress(position.token1, network);
+      return {
+        id: tokenIdList[i],
+        minTick: position.tickLower,
+        maxTick: position.tickUpper,
+        isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
+        isInRange: true,
+        token0: token0.symbol,
+        token1: token1.symbol,
+        feeTier: position.fee / 10000 + "%",
+        liquidity: position.liquidity.toNumber(),
+        unclaimedFee0: 0,
+        unclaimedFee1: 0,
+        minPrice: (
+          Math.pow(1.0001, position.tickLower) /
+          Math.pow(10, token1.decimals - token0.decimals)
+        ).toPrecision(5),
+        maxPrice: (
+          Math.pow(1.0001, position.tickUpper) /
+          Math.pow(10, token1.decimals - token0.decimals)
+        ).toPrecision(5),
+        currentPrice: 0,
+      };
+    });
     return hideClosedPositions
       ? positionList.filter((position) => position.isActivePosition)
       : positionList;
