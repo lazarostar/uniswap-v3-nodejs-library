@@ -7,6 +7,8 @@ const {
   Position,
   nearestUsableTick,
   NonfungiblePositionManager,
+  priceToClosestTick,
+  tickToPrice,
 } = require("@uniswap/v3-sdk");
 const {
   abi: IUniswapV3FactoryABI,
@@ -30,6 +32,7 @@ const {
   TradeType,
   Percent,
   Fraction,
+  Price,
 } = require("@uniswap/sdk-core");
 
 const V3_SWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
@@ -334,6 +337,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     minPrice,
     maxPrice
   ) {
+    feeTier *= 10000;
+
     const factoryContract = new ethers.Contract(
       FACTORY_ADDRESS,
       IUniswapV3FactoryABI,
@@ -359,14 +364,14 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       getPoolState(poolContract),
     ]);
 
-    const [TokenA, TokenB] =
+    [token0, token1, minPrice, maxPrice] =
       token0.address === immutables.token0
-        ? [token0, token1]
-        : [token1, token0];
+        ? [token0, token1, minPrice, maxPrice]
+        : [token1, token0, 1 / maxPrice, 1 / minPrice];
 
     const pool = new Pool(
-      TokenA,
-      TokenB,
+      token0,
+      token1,
       immutables.fee,
       state.sqrtPriceX96.toString(),
       state.liquidity.toString(),
@@ -479,24 +484,37 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     //   return result;
     // }
 
-    const tickLower =
-      nearestUsableTick(state.tick, immutables.tickSpacing) -
-      immutables.tickSpacing * 2;
-    const tickUpper =
-      nearestUsableTick(state.tick, immutables.tickSpacing) +
-      immutables.tickSpacing * 2;
+    const tickLower = nearestUsableTick(
+      priceToClosestTick(
+        new Price(
+          token0,
+          token1,
+          Math.pow(10, token0.decimals),
+          Math.round(minPrice * Math.pow(10, token1.decimals))
+        )
+      ),
+      immutables.tickSpacing
+    );
+    const tickUpper = nearestUsableTick(
+      priceToClosestTick(
+        new Price(
+          token0,
+          token1,
+          Math.pow(10, token0.decimals),
+          Math.round(maxPrice * Math.pow(10, token1.decimals))
+        )
+      ),
+      immutables.tickSpacing
+    );
 
-    console.log(tickLower, tickUpper);
+    console.log(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
+    console.log(`Current Tick: ${state.tick}`);
 
     const { calldata, value } = NonfungiblePositionManager.addCallParameters(
       new Position({
         pool,
-        tickLower:
-          nearestUsableTick(state.tick, immutables.tickSpacing) -
-          immutables.tickSpacing * 2,
-        tickUpper:
-          nearestUsableTick(state.tick, immutables.tickSpacing) +
-          immutables.tickSpacing * 2,
+        tickLower,
+        tickUpper,
         liquidity: 1000,
       }),
       {
@@ -529,7 +547,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     const result = await tx.wait();
 
     const tokenId = Number.parseInt(result.logs[6].topics[1], 16);
-    return { tokenId, token0, token1, feeTier };
+    return tokenId;
   }
 
   async function ClosePoolPosition(tokenId) {
@@ -754,7 +772,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       positionInfoList.map(async (position, i) => {
         const token0 = getTokenByAddress(position.token0, network);
         const token1 = getTokenByAddress(position.token1, network);
-        const isActive = position.liquidity.toNumber() === 0 ? false : true
+        const isActive = position.liquidity.toNumber() === 0 ? false : true;
         const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
           await getPoolPositionInfo(
             token0,
@@ -779,18 +797,17 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
           liquidityToken1: amount1,
           unclaimedFee0,
           unclaimedFee1,
-          minPrice: (
-            Math.pow(1.0001, position.tickLower) /
-            Math.pow(10, token1.decimals - token0.decimals)
-          ).toPrecision(5),
-          maxPrice: (
-            Math.pow(1.0001, position.tickUpper) /
-            Math.pow(10, token1.decimals - token0.decimals)
-          ).toPrecision(5),
-          currentPrice: (
-            Math.pow(1.0001, tick) /
-            Math.pow(10, token1.decimals - token0.decimals)
-          ).toPrecision(5),
+          minPrice: tickToPrice(
+            token0,
+            token1,
+            position.tickLower
+          ).toSignificant(5),
+          maxPrice: tickToPrice(
+            token0,
+            token1,
+            position.tickUpper
+          ).toSignificant(5),
+          currentPrice: tickToPrice(token0, token1, tick).toSignificant(5),
         };
       })
     );

@@ -21,24 +21,26 @@ async function main() {
   // console.log(result);
 
   // 4. Test CreatePoolPosition function
-  // const result = await lib.CreatePoolPosition(
-  //   lib.Tokens.USDC,
-  //   lib.Tokens.WETH,
-  //   3000,
-  //   50000,
-  //   32936000000000
-  // );
-  // console.log(result);
+  const result = await lib.CreatePoolPosition(
+    lib.Tokens.WETH,
+    lib.Tokens.USDC,
+    0.3,
+    0.00076929,
+    32936000000000,
+    1260,
+    1270
+  );
+  console.log(`Token id: ${result}`);
 
   // 5. Test ClosePoolPosition function
   // const result = await lib.ClosePoolPosition(541473);
   // console.log(result);
 
   // 6. Test GetNFTList function
-  const result = await lib.GetNFTList(false);
-  console.log(result);
-  console.log("===========");
-  console.log(`Total: ${result.length}`);
+  // const result = await lib.GetNFTList(true);
+  // console.log(result);
+  // console.log("===========");
+  // console.log(`Total: ${result.length}`);
 
   // 7. Test CollectUnclaimedFees function
   // const result = await lib.CollectUnclaimedFees(539151);
