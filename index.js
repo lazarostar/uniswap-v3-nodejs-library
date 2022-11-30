@@ -24,13 +24,13 @@ async function main() {
   // const result = await lib.CreatePoolPosition(
   //   lib.Tokens.USDC,
   //   lib.Tokens.WETH,
-  //   500,
+  //   3000,
   //   50000,
   //   32936000000000
   // );
   // console.log(result);
 
-  // 5. Test CreatePoolPosition function
+  // 5. Test ClosePoolPosition function
   // const result = await lib.ClosePoolPosition(539319);
   // console.log(result);
 

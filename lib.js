@@ -625,18 +625,61 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
   }
 
   async function GetNFTList(hideClosedPositions = true) {
-    const contract = new ethers.Contract(
+    const poolCache = [];
+    const getCurrentTick = async (token0, token1, feeTier) => {
+      const i = poolCache.findIndex(
+        (item) =>
+          (item.token0.address === token0.address &&
+            item.token1.address === token1.address &&
+            item.feeTier === feeTier) ||
+          (item.token0.address === token1.address &&
+            item.token1.address === token0.address &&
+            item.feeTier === feeTier)
+      );
+      if (i > -1) {
+        return poolCache[i].tick;
+      }
+
+      const factoryContract = new ethers.Contract(
+        FACTORY_ADDRESS,
+        IUniswapV3FactoryABI,
+        web3Provider
+      );
+      const poolAddress = await factoryContract.getPool(
+        token0.address,
+        token1.address,
+        feeTier
+      );
+      const poolContract = new ethers.Contract(
+        poolAddress,
+        IUniswapV3PoolABI,
+        web3Provider
+      );
+      const state = await getPoolState(poolContract);
+      poolCache.push({
+        token0,
+        token1,
+        feeTier,
+        tick: state.tick,
+      });
+
+      return state.tick;
+    };
+
+    const positionManagerContract = new ethers.Contract(
       V3_POSITION_NFT_ADDRESS,
       INonfungiblePositionManagerABI,
       web3Provider
     );
-    const size = (await contract.balanceOf(walletAddress)).toNumber();
+    const size = (
+      await positionManagerContract.balanceOf(walletAddress)
+    ).toNumber();
     console.log(size);
 
     const promiseList = [];
     for (let i = 0; i < size; i++) {
       promiseList.push(
-        contract
+        positionManagerContract
           .tokenOfOwnerByIndex(walletAddress, i)
           .then((val) => val.toNumber())
       );
@@ -644,35 +687,43 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     const tokenIdList = await Promise.all(promiseList);
     const positionPromiseList = [];
     for (let i = 0; i < size; i++) {
-      positionPromiseList.push(contract.positions(tokenIdList[i]));
+      positionPromiseList.push(
+        positionManagerContract.positions(tokenIdList[i])
+      );
     }
-    const positionListFromContract = await Promise.all(positionPromiseList);
-    const positionList = positionListFromContract.map((position, i) => {
-      const token0 = getTokenByAddress(position.token0, network);
-      const token1 = getTokenByAddress(position.token1, network);
-      return {
-        id: tokenIdList[i],
-        minTick: position.tickLower,
-        maxTick: position.tickUpper,
-        isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
-        isInRange: true,
-        token0: token0.symbol,
-        token1: token1.symbol,
-        feeTier: position.fee / 10000 + "%",
-        liquidity: position.liquidity.toNumber(),
-        unclaimedFee0: 0,
-        unclaimedFee1: 0,
-        minPrice: (
-          Math.pow(1.0001, position.tickLower) /
-          Math.pow(10, token1.decimals - token0.decimals)
-        ).toPrecision(5),
-        maxPrice: (
-          Math.pow(1.0001, position.tickUpper) /
-          Math.pow(10, token1.decimals - token0.decimals)
-        ).toPrecision(5),
-        currentPrice: 0,
-      };
-    });
+    const positionInfoList = await Promise.all(positionPromiseList);
+    const positionList = await Promise.all(
+      positionInfoList.map(async (position, i) => {
+        const token0 = getTokenByAddress(position.token0, network);
+        const token1 = getTokenByAddress(position.token1, network);
+        const tick = await getCurrentTick(token0, token1, position.fee);
+        return {
+          id: tokenIdList[i],
+          minTick: position.tickLower,
+          maxTick: position.tickUpper,
+          isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
+          isInRange: tick >= position.tickLower && tick <= position.tickUpper,
+          token0: token0.symbol,
+          token1: token1.symbol,
+          feeTier: position.fee / 10000 + "%",
+          liquidity: position.liquidity.toNumber(),
+          unclaimedFee0: 0,
+          unclaimedFee1: 0,
+          minPrice: (
+            Math.pow(1.0001, position.tickLower) /
+            Math.pow(10, token1.decimals - token0.decimals)
+          ).toPrecision(5),
+          maxPrice: (
+            Math.pow(1.0001, position.tickUpper) /
+            Math.pow(10, token1.decimals - token0.decimals)
+          ).toPrecision(5),
+          currentPrice: (
+            Math.pow(1.0001, tick) /
+            Math.pow(10, token1.decimals - token0.decimals)
+          ).toPrecision(5),
+        };
+      })
+    );
     return hideClosedPositions
       ? positionList.filter((position) => position.isActivePosition)
       : positionList;
