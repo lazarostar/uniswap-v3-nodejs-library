@@ -31,11 +31,11 @@ async function main() {
   // console.log(result);
 
   // 5. Test ClosePoolPosition function
-  // const result = await lib.ClosePoolPosition(539319);
+  // const result = await lib.ClosePoolPosition(541473);
   // console.log(result);
 
   // 6. Test GetNFTList function
-  const result = await lib.GetNFTList(true);
+  const result = await lib.GetNFTList(false);
   console.log(result);
   console.log("===========");
   console.log(`Total: ${result.length}`);

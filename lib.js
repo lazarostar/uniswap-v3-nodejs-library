@@ -625,8 +625,22 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
   }
 
   async function GetNFTList(hideClosedPositions = true) {
+    const positionManagerContract = new ethers.Contract(
+      V3_POSITION_NFT_ADDRESS,
+      INonfungiblePositionManagerABI,
+      web3Provider
+    );
     const poolCache = [];
-    const getCurrentTick = async (token0, token1, feeTier) => {
+    const getPoolPositionInfo = async (
+      token0,
+      token1,
+      feeTier,
+      tickLower,
+      tickUpper,
+      liquidity,
+      tokenId,
+      isActive
+    ) => {
       const i = poolCache.findIndex(
         (item) =>
           (item.token0.address === token0.address &&
@@ -637,7 +651,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
             item.feeTier === feeTier)
       );
       if (i > -1) {
-        return poolCache[i].tick;
+        return {
+          tick: poolCache[i].tick,
+          amount0: poolCache[i].amount0,
+          amount1: poolCache[i].amount1,
+          unclaimedFee0: poolCache[i].unclaimedFee0,
+          unclaimedFee1: poolCache[i].unclaimedFee1,
+        };
       }
 
       const factoryContract = new ethers.Contract(
@@ -655,22 +675,60 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         IUniswapV3PoolABI,
         web3Provider
       );
-      const state = await getPoolState(poolContract);
+      const [immutables, state] = await Promise.all([
+        getPoolImmutables(poolContract),
+        getPoolState(poolContract),
+      ]);
+      const pool = new Pool(
+        token0,
+        token1,
+        immutables.fee,
+        state.sqrtPriceX96.toString(),
+        state.liquidity.toString(),
+        state.tick
+      );
+      const position = new Position({
+        pool: pool,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        liquidity: liquidity,
+      });
+
+      let unclaimedFee0 = 0,
+        unclaimedFee1 = 0;
+      if (isActive) {
+        var results = await positionManagerContract.callStatic.collect({
+          tokenId,
+          recipient: walletAddress,
+          amount0Max: MAX_UINT128,
+          amount1Max: MAX_UINT128,
+        });
+        unclaimedFee0 = (
+          parseFloat(results.amount0) / Math.pow(10, token0.decimals)
+        ).toPrecision(4);
+        unclaimedFee1 = (
+          parseFloat(results.amount1) / Math.pow(10, token1.decimals)
+        ).toPrecision(4);
+      }
+
       poolCache.push({
         token0,
         token1,
         feeTier,
         tick: state.tick,
+        amount0: position.amount0.toSignificant(5),
+        amount1: position.amount1.toSignificant(5),
+        unclaimedFee0,
+        unclaimedFee1,
       });
-
-      return state.tick;
+      return {
+        tick: state.tick,
+        amount0: position.amount0.toSignificant(5),
+        amount1: position.amount1.toSignificant(5),
+        unclaimedFee0,
+        unclaimedFee1,
+      };
     };
-
-    const positionManagerContract = new ethers.Contract(
-      V3_POSITION_NFT_ADDRESS,
-      INonfungiblePositionManagerABI,
-      web3Provider
-    );
     const size = (
       await positionManagerContract.balanceOf(walletAddress)
     ).toNumber();
@@ -696,19 +754,31 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       positionInfoList.map(async (position, i) => {
         const token0 = getTokenByAddress(position.token0, network);
         const token1 = getTokenByAddress(position.token1, network);
-        const tick = await getCurrentTick(token0, token1, position.fee);
+        const isActive = position.liquidity.toNumber() === 0 ? false : true
+        const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
+          await getPoolPositionInfo(
+            token0,
+            token1,
+            position.fee,
+            position.tickLower,
+            position.tickUpper,
+            position.liquidity,
+            tokenIdList[i],
+            isActive
+          );
         return {
           id: tokenIdList[i],
           minTick: position.tickLower,
           maxTick: position.tickUpper,
-          isActivePosition: position.liquidity.toNumber() === 0 ? false : true,
+          isActivePosition: isActive,
           isInRange: tick >= position.tickLower && tick <= position.tickUpper,
           token0: token0.symbol,
           token1: token1.symbol,
           feeTier: position.fee / 10000 + "%",
-          liquidity: position.liquidity.toNumber(),
-          unclaimedFee0: 0,
-          unclaimedFee1: 0,
+          liquidityToken0: amount0,
+          liquidityToken1: amount1,
+          unclaimedFee0,
+          unclaimedFee1,
           minPrice: (
             Math.pow(1.0001, position.tickLower) /
             Math.pow(10, token1.decimals - token0.decimals)
