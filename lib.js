@@ -332,10 +332,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     token0,
     token1,
     feeTier,
-    token0Amount,
-    token1Amount,
     minPrice,
-    maxPrice
+    maxPrice,
+    liquidity
   ) {
     feeTier *= 10000;
 
@@ -515,7 +514,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         pool,
         tickLower,
         tickUpper,
-        liquidity: 1000,
+        liquidity,
       }),
       {
         slippageTolerance: new Percent(5, 100),
