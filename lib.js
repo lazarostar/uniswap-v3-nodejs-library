@@ -334,7 +334,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     feeTier,
     minPrice,
     maxPrice,
-    liquidity
+    amount0,
+    amount1
   ) {
     feeTier *= 10000;
 
@@ -363,10 +364,10 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       getPoolState(poolContract),
     ]);
 
-    [token0, token1, minPrice, maxPrice] =
+    [token0, token1, minPrice, maxPrice, amount0, amount1] =
       token0.address === immutables.token0
-        ? [token0, token1, minPrice, maxPrice]
-        : [token1, token0, 1 / maxPrice, 1 / minPrice];
+        ? [token0, token1, minPrice, maxPrice, amount0, amount1]
+        : [token1, token0, 1 / maxPrice, 1 / minPrice, amount1, amount0];
 
     const pool = new Pool(
       token0,
@@ -510,11 +511,12 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     console.log(`Current Tick: ${state.tick}`);
 
     const { calldata, value } = NonfungiblePositionManager.addCallParameters(
-      new Position({
+      Position.fromAmounts({
         pool,
         tickLower,
         tickUpper,
-        liquidity,
+        amount0: Math.floor(amount0 * Math.pow(10, token0.decimals)),
+        amount1: Math.floor(amount1 * Math.pow(10, token1.decimals)),
       }),
       {
         slippageTolerance: new Percent(5, 100),
