@@ -21,16 +21,16 @@ async function main() {
   // console.log(result);
 
   // 4. Test CreatePoolPosition function
-  const result = await lib.CreatePoolPosition(
-    lib.Tokens.WETH,
-    lib.Tokens.USDC,
-    0.05,
-    1260,
-    1300,
-    0.00008,
-    2.3
-  );
-  console.log(`Token id: ${result}`);
+  // const result = await lib.CreatePoolPosition(
+  //   lib.Tokens.WETH,
+  //   lib.Tokens.USDC,
+  //   0.05,
+  //   1260,
+  //   1300,
+  //   0.00008,
+  //   2.3
+  // );
+  // console.log(`Token id: ${result}`);
 
   // 5. Test ClosePoolPosition function
   // const result = await lib.ClosePoolPosition(541869);
@@ -44,8 +44,8 @@ async function main() {
   // console.log(`Total: ${result.length}`);
 
   // 7. Test CollectUnclaimedFees function
-  // const result = await lib.CollectUnclaimedFees(541669);
-  // console.log(result);
+  const result = await lib.CollectUnclaimedFees(547177);
+  console.log(result);
 
   return 0;
 }

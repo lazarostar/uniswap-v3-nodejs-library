@@ -290,9 +290,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
             V3_POSITION_NFT_ADDRESS,
             isOutput
               ? route.quote
-                  .multiply(Math.pow(10, quoteToken.decimals))
-                  .multiply(new Fraction(105, 100))
-                  .toFixed(0)
+                .multiply(Math.pow(10, quoteToken.decimals))
+                .multiply(new Fraction(105, 100))
+                .toFixed(0)
               : amountString,
             {
               gasPrice: feeData.gasPrice.mul(110).div(100),
@@ -716,7 +716,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       let unclaimedFee0 = 0,
         unclaimedFee1 = 0;
       if (isActive) {
-        var results = await positionManagerContract.callStatic.collect({
+        const results = await positionManagerContract.callStatic.collect({
           tokenId,
           recipient: walletAddress,
           amount0Max: MAX_UINT128,
@@ -872,6 +872,21 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     console.log("amount0:", position.amount0.toSignificant(4));
     console.log("amount1:", position.amount1.toSignificant(4));
 
+    let unclaimedFee0 = 0,
+      unclaimedFee1 = 0;
+    const collectResults = await positionManagerContract.callStatic.collect({
+      tokenId,
+      recipient: walletAddress,
+      amount0Max: MAX_UINT128,
+      amount1Max: MAX_UINT128,
+    });
+    unclaimedFee0 = (
+      parseFloat(collectResults.amount0) / Math.pow(10, token0.decimals)
+    ).toPrecision(4);
+    unclaimedFee1 = (
+      parseFloat(collectResults.amount1) / Math.pow(10, token1.decimals)
+    ).toPrecision(4);
+
     const feeData = await web3Provider.getFeeData();
     const nonce = await web3Provider.getTransactionCount(walletAddress);
     console.log(`Nonce: ${nonce}`);
@@ -900,7 +915,10 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
 
     const tx = await web3Provider.sendTransaction(signedTx);
     const results = await tx.wait();
-    return results;
+    return {
+      token0: unclaimedFee0,
+      token1: unclaimedFee1
+    };
   }
 
   return {
