@@ -921,6 +921,82 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     };
   }
 
+  async function GetUnclaimedFeeAmounts(tokenId) {
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+
+    const positionManagerContract = new ethers.Contract(
+      V3_POSITION_NFT_ADDRESS,
+      INonfungiblePositionManagerABI,
+      web3Provider.getSigner(wallet.address)
+    );
+
+    const positionInfo = await positionManagerContract.positions(tokenId);
+    const token0 = getTokenByAddress(positionInfo.token0, network);
+    const token1 = getTokenByAddress(positionInfo.token1, network);
+
+    console.log("Getting pool...");
+    const poolAddress = await factoryContract.getPool(
+      token0.address,
+      token1.address,
+      positionInfo.fee
+    );
+    console.log(`Pool: ${poolAddress}`);
+
+    const poolContract = new ethers.Contract(
+      poolAddress,
+      IUniswapV3PoolABI,
+      web3Provider
+    );
+
+    const [immutables, state] = await Promise.all([
+      getPoolImmutables(poolContract),
+      getPoolState(poolContract),
+    ]);
+
+    const pool = new Pool(
+      token0,
+      token1,
+      immutables.fee,
+      state.sqrtPriceX96.toString(),
+      state.liquidity.toString(),
+      state.tick
+    );
+
+    const position = new Position({
+      pool: pool,
+      tickLower: positionInfo.tickLower,
+      tickUpper: positionInfo.tickUpper,
+      liquidity: positionInfo.liquidity,
+    });
+
+    console.log("amount0:", position.amount0.toSignificant(4));
+    console.log("amount1:", position.amount1.toSignificant(4));
+
+    let unclaimedFee0 = 0,
+      unclaimedFee1 = 0;
+    const collectResults = await positionManagerContract.callStatic.collect({
+      tokenId,
+      recipient: walletAddress,
+      amount0Max: MAX_UINT128,
+      amount1Max: MAX_UINT128,
+    });
+    unclaimedFee0 = (
+      parseFloat(collectResults.amount0) / Math.pow(10, token0.decimals)
+    ).toPrecision(4);
+    unclaimedFee1 = (
+      parseFloat(collectResults.amount1) / Math.pow(10, token1.decimals)
+    ).toPrecision(4);
+    
+    return {
+      token0: unclaimedFee0,
+      token1: unclaimedFee1
+    };
+  }
+
   return {
     GetAmount,
     GetCurrentPrice,
@@ -929,6 +1005,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     ClosePoolPosition,
     GetNFTList,
     CollectUnclaimedFees,
+    GetUnclaimedFeeAmounts,
     Tokens: Tokens[network],
   };
 }

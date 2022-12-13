@@ -44,7 +44,11 @@ async function main() {
   // console.log(`Total: ${result.length}`);
 
   // 7. Test CollectUnclaimedFees function
-  const result = await lib.CollectUnclaimedFees(547177);
+  // const result = await lib.CollectUnclaimedFees(547177);
+  // console.log(result);
+
+  // 8. Test GetUnclaimedFeeAmounts function
+  const result = await lib.GetUnclaimedFeeAmounts(547177);
   console.log(result);
 
   return 0;
