@@ -990,11 +990,39 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     unclaimedFee1 = (
       parseFloat(collectResults.amount1) / Math.pow(10, token1.decimals)
     ).toPrecision(4);
-    
+
     return {
       token0: unclaimedFee0,
       token1: unclaimedFee1
     };
+  }
+
+  async function GetFeeTiers(token0, token1) {
+    const possibleFeeTiers = [100, 500, 3_000, 5_000, 10_000]
+    const result = []
+
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+
+    for (const fee of possibleFeeTiers) {
+      console.log(`Getting pool with fee ${fee / 10_000}%...`);
+      const poolAddress = await factoryContract.getPool(
+        token0.address,
+        token1.address,
+        fee
+      );
+      if (poolAddress !== ADDRESS_ZERO) {
+        result.push(fee / 10_000)
+        console.log('Okay')
+      } else {
+        console.log('Not exist')
+      }
+    }
+
+    return result
   }
 
   return {
@@ -1006,6 +1034,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     GetNFTList,
     CollectUnclaimedFees,
     GetUnclaimedFeeAmounts,
+    GetFeeTiers,
     Tokens: Tokens[network],
   };
 }

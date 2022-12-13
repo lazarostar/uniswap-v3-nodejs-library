@@ -48,7 +48,11 @@ async function main() {
   // console.log(result);
 
   // 8. Test GetUnclaimedFeeAmounts function
-  const result = await lib.GetUnclaimedFeeAmounts(547177);
+  // const result = await lib.GetUnclaimedFeeAmounts(547177);
+  // console.log(result);
+
+  // 9. Test GetFeeTiers function
+  const result = await lib.GetFeeTiers(lib.Tokens.USDT, lib.Tokens.USDC);
   console.log(result);
 
   return 0;
