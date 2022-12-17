@@ -966,6 +966,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       state.tick
     );
 
+    pool.price
+
     const position = new Position({
       pool: pool,
       tickLower: positionInfo.tickLower,
@@ -1025,6 +1027,33 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return result
   }
 
+  async function GetCurrentPriceTick(token0, token1, feeTier) {
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+    const poolAddress = await factoryContract.getPool(
+      token0.address,
+      token1.address,
+      feeTier * 10_000
+    );
+    console.log(`Pool: ${poolAddress}`);
+
+    const poolContract = new ethers.Contract(
+      poolAddress,
+      IUniswapV3PoolABI,
+      web3Provider
+    );
+
+    const [immutables, state] = await Promise.all([
+      getPoolImmutables(poolContract),
+      getPoolState(poolContract),
+    ]);
+
+    return immutables.token0 === token0.address ? state.tick : (-state.tick)
+  }
+
   return {
     GetAmount,
     GetCurrentPrice,
@@ -1035,6 +1064,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     CollectUnclaimedFees,
     GetUnclaimedFeeAmounts,
     GetFeeTiers,
+    GetCurrentPriceTick,
     Tokens: Tokens[network],
   };
 }

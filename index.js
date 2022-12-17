@@ -52,7 +52,11 @@ async function main() {
   // console.log(result);
 
   // 9. Test GetFeeTiers function
-  const result = await lib.GetFeeTiers(lib.Tokens.USDT, lib.Tokens.USDC);
+  // const result = await lib.GetFeeTiers(lib.Tokens.USDT, lib.Tokens.USDC);
+  // console.log(result);\
+
+  // 10. Test GetCurrentPriceTick function
+  const result = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.WMATIC, 0.05);
   console.log(result);
 
   return 0;
