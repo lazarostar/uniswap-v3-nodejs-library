@@ -56,8 +56,16 @@ async function main() {
   // console.log(result);\
 
   // 10. Test GetCurrentPriceTick function
-  const result = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.WMATIC, 0.05);
+  // const result = await lib.GetCurrentPriceTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05);
+  // console.log(result);
+
+  // 11. Test CreatePoolPositionMax function
+  const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
   console.log(result);
+  
+  // 12. Test GetNearestTick function
+  // const result = await lib.GetNearestTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
+  // console.log(result);
 
   return 0;
 }
