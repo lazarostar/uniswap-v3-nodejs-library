@@ -1118,7 +1118,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return 'failed'
   }
 
-  async function GetNearestTick(token0, token1, feeTier, price) {
+  async function GetNearestTickRange(token0, token1, feeTier, price) {
     feeTier *= 10_000
 
     const factoryContract = new ethers.Contract(
@@ -1151,19 +1151,23 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         ? [token0, token1, price]
         : [token1, token0, 1 / price];
 
-    const tick = nearestUsableTick(
+    const currentPrice = new Price(
+      token0,
+      token1,
+      Math.pow(10, token0.decimals),
+      Math.round(price * Math.pow(10, token1.decimals))
+    )
+    const nearestTick = nearestUsableTick(
       priceToClosestTick(
-        new Price(
-          token0,
-          token1,
-          Math.pow(10, token0.decimals),
-          Math.round(price * Math.pow(10, token1.decimals))
-        )
+        currentPrice
       ),
       immutables.tickSpacing
     );
 
-    return tick
+    const nearestPrice = tickToPrice(token0, token1, nearestTick)
+    if (nearestPrice.greaterThan(currentPrice))
+      return [nearestTick - immutables.tickSpacing, nearestTick]
+    return [nearestTick, nearestTick + immutables.tickSpacing]
   }
 
   return {
@@ -1178,7 +1182,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     GetFeeTiers,
     GetCurrentPriceTick,
     CreatePoolPositionMax,
-    GetNearestTick,
+    GetNearestTickRange,
     Tokens: Tokens[network],
   };
 }

@@ -60,12 +60,12 @@ async function main() {
   // console.log(result);
 
   // 11. Test CreatePoolPositionMax function
-  const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
-  console.log(result);
-  
-  // 12. Test GetNearestTick function
-  // const result = await lib.GetNearestTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
+  // const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
   // console.log(result);
+  
+  // 12. Test GetNearestTickRange function
+  const result = await lib.GetNearestTickRange(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
+  console.log(result);
 
   return 0;
 }
