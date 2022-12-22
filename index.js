@@ -56,18 +56,22 @@ async function main() {
   // console.log(result);\
 
   // 10. Test GetCurrentPriceTick function
-  // const result = await lib.GetCurrentPriceTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05);
-  // console.log(result);
+  const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05);
+  console.log(currentTick);
 
   // 11. Test CreatePoolPositionMax function
   // const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
   // console.log(result);
 
-  // 12. Test GetNearestTickRange function
-  const [tickLower, tickUpper] = await lib.GetNearestTickRange(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
+  // 12. Test GetNearestTickRangeFromPrice function
+  // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromPrice(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
+  // console.log(tickLower, tickUpper);
+
+  // 13. Test GetNearestTickRangeFromTick function
+  const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, currentTick);
   console.log(tickLower, tickUpper);
 
-  // 13. Test CreatePoolPositionTicks function
+  // 14. Test CreatePoolPositionTicks function
   const result = await lib.CreatePoolPositionTicks(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, tickLower, tickUpper, 0.00001, 1)
   console.log(result)
 

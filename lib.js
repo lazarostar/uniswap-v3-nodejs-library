@@ -1124,7 +1124,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     return 'failed'
   }
 
-  async function GetNearestTickRange(token0, token1, feeTier, price) {
+  async function GetNearestTickRangeFromPrice(token0, token1, feeTier, price) {
     const [inputToken0, inputToken1] = [token0, token1]
 
     feeTier *= 10_000
@@ -1175,6 +1175,57 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     let tickLower, tickUpper;
     const nearestPrice = tickToPrice(token0, token1, nearestTick)
     if (nearestPrice.greaterThan(currentPrice)) {
+      [tickLower, tickUpper] = [nearestTick - immutables.tickSpacing, nearestTick]
+    } else {
+      [tickLower, tickUpper] = [nearestTick, nearestTick + immutables.tickSpacing]
+    }
+
+    if (inputToken0.address === token0.address) return [tickLower, tickUpper]
+    return [-tickUpper, -tickLower]
+  }
+
+  async function GetNearestTickRangeFromTick(token0, token1, feeTier, tick) {
+    const [inputToken0, inputToken1] = [token0, token1]
+
+    feeTier *= 10_000
+
+    const factoryContract = new ethers.Contract(
+      FACTORY_ADDRESS,
+      IUniswapV3FactoryABI,
+      web3Provider
+    );
+
+    console.log("Getting pool...");
+    const poolAddress = await factoryContract.getPool(
+      token0.address,
+      token1.address,
+      feeTier
+    );
+    console.log(`Pool: ${poolAddress}`);
+
+    const poolContract = new ethers.Contract(
+      poolAddress,
+      IUniswapV3PoolABI,
+      web3Provider
+    );
+
+    const [immutables] = await Promise.all([
+      getPoolImmutables(poolContract),
+      getPoolState(poolContract),
+    ]);
+
+    [token0, token1, tick] =
+      token0.address === immutables.token0
+        ? [token0, token1, tick]
+        : [token1, token0, -tick];
+
+    const nearestTick = nearestUsableTick(
+      tick,
+      immutables.tickSpacing
+    );
+
+    let tickLower, tickUpper;
+    if (nearestTick > tick) {
       [tickLower, tickUpper] = [nearestTick - immutables.tickSpacing, nearestTick]
     } else {
       [tickLower, tickUpper] = [nearestTick, nearestTick + immutables.tickSpacing]
@@ -1283,9 +1334,6 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     const tx = await web3Provider.sendTransaction(signedTx);
     const result = await tx.wait();
 
-    console.log('=== Logs ===')
-    console.log(result.logs)
-
     const tokenId = Number.parseInt(result.logs[6].topics[1], 16);
     return tokenId;
   }
@@ -1302,7 +1350,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     GetFeeTiers,
     GetCurrentPriceTick,
     CreatePoolPositionMax,
-    GetNearestTickRange,
+    GetNearestTickRangeFromPrice,
+    GetNearestTickRangeFromTick,
     CreatePoolPositionTicks,
     Tokens: Tokens[network],
   };
