@@ -107,6 +107,3 @@ dist
 # Sublime project files
 *.sublime-project
 *.sublime-workspace
-
-# npm / node package lock file
-/package-lock.json
