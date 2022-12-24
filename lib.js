@@ -320,6 +320,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
   }
 
   async function Swap(token0, token1, amount, isOutput = false) {
+    const originalToken0 = token0
     const [token, quoteToken] = isOutput
       ? [token1, token0]
       : [token0, token1];
@@ -347,19 +348,18 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       .toFixed(0);
     console.log(`quoteAmountString: ${quoteAmountString}`);
 
-    if (!token0.isNative) {
+    if (!originalToken0.isNative) {
+      const feeData = await web3Provider.getFeeData();
+      console.log(`Approving ${originalToken0.symbol} ...`);
       const token0Contract = new ethers.Contract(
-        token0.address,
+        originalToken0.address,
         IERC20MinimalABI,
         web3Provider
       );
-      console.log("Collecting fee data...");
-      const feeData = await web3Provider.getFeeData();
-      console.log("Approving...");
       const approvalTx = await token0Contract
         .connect(connectedWallet)
         .approve(
-          V3_POSITION_NFT_ADDRESS,
+          V3_SWAP_ROUTER_ADDRESS,
           MAX_UINT128,
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
