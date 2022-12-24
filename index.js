@@ -78,6 +78,10 @@ async function main() {
   // const result = await lib.AddLiquidity(592088, 1, 0.00001)
   // console.log(result)
 
+  // 16. Test GetPoolPositionInfo function
+  const result = await lib.GetPoolPositionInfo(592088)
+  console.log(result)
+
   return 0;
 }
 
