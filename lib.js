@@ -23,21 +23,21 @@ const {
   AlphaRouter,
   SwapType,
   SwapToRatioStatus,
-  nativeOnChain,
   SWAP_ROUTER_02_ADDRESS,
+  NONFUNGIBLE_POSITION_MANAGER_ADDRESS
 } = require("@uniswap/smart-order-router");
 const {
-  Token,
   CurrencyAmount,
-  SupportedChainId,
   TradeType,
   Percent,
   Fraction,
   Price,
 } = require("@uniswap/sdk-core");
 
-const V3_SWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
-const V3_POSITION_NFT_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88";
+const { Tokens, Networks } = require('./tokens')
+
+const V3_SWAP_ROUTER_ADDRESS = SWAP_ROUTER_02_ADDRESS;
+const V3_POSITION_NFT_ADDRESS = NONFUNGIBLE_POSITION_MANAGER_ADDRESS;
 
 const MAX_UINT128 = ethers.BigNumber.from(2).pow(128).sub(1);
 
@@ -94,57 +94,6 @@ const IERC20MinimalABI = [
     type: "function",
   },
 ];
-
-const Networks = {
-  GOERLI: SupportedChainId.GOERLI,
-  POLYGON: SupportedChainId.POLYGON,
-};
-
-const Tokens = {
-  [Networks.GOERLI]: {
-    NATIVE: nativeOnChain(Networks.GOERLI),
-    ETH: nativeOnChain(Networks.GOERLI),
-    UNI: new Token(
-      Networks.GOERLI,
-      "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
-      18,
-      "UNI",
-      "Uniswap Token"
-    ),
-  },
-  [Networks.POLYGON]: {
-    NATIVE: nativeOnChain(Networks.POLYGON),
-    MATIC: nativeOnChain(Networks.POLYGON),
-    WMATIC: new Token(
-      Networks.POLYGON,
-      "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-      18,
-      "WMATIC",
-      "Wrapped Matic"
-    ),
-    WETH: new Token(
-      Networks.POLYGON,
-      "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-      18,
-      "WETH",
-      "Wrapped ETH"
-    ),
-    USDT: new Token(
-      Networks.POLYGON,
-      "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-      6,
-      "USDT",
-      "Tether USD"
-    ),
-    USDC: new Token(
-      Networks.POLYGON,
-      "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-      6,
-      "USDC",
-      "USD Coin"
-    ),
-  },
-};
 
 const getTokenIdFromTransactionLogs = (logs) => {
   for (const log of logs) {
@@ -1004,8 +953,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     let token0Balance = await GetAmount(token0)
     let token1Balance = await GetAmount(token1)
 
-    let token0Amount = CurrencyAmount.fromRawAmount(token0, token0Balance * Math.pow(10, token0.decimals))
-    let token1Amount = CurrencyAmount.fromRawAmount(token1, token1Balance * Math.pow(10, token1.decimals))
+    let token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0Balance * Math.pow(10, token0.decimals)))
+    let token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1Balance * Math.pow(10, token1.decimals)))
 
     const factoryContract = new ethers.Contract(
       FACTORY_ADDRESS,
@@ -1098,7 +1047,6 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     );
 
     if (routeToRatioResponse.status == SwapToRatioStatus.SUCCESS) {
-      console.log("Collecting fee data...");
       const feeData = await web3Provider.getFeeData();
 
       const token0Contract = new ethers.Contract(
@@ -1106,12 +1054,12 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         IERC20MinimalABI,
         web3Provider
       );
-      console.log("Approving Token 0 ...");
+      console.log(`Approving ${token0.symbol} ...`);
       let approvalTx = await token0Contract
         .connect(connectedWallet)
         .approve(
-          V3_POSITION_NFT_ADDRESS,
-          token0Balance * Math.pow(10, token0.decimals),
+          V3_SWAP_ROUTER_ADDRESS,
+          MAX_UINT128,
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
           }
@@ -1123,18 +1071,17 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         IERC20MinimalABI,
         web3Provider
       );
-      console.log("Approving Token 1 ...");
+      console.log(`Approving ${token1.symbol} ...`);
       approvalTx = await token1Contract
         .connect(connectedWallet)
         .approve(
-          V3_POSITION_NFT_ADDRESS,
-          token1Balance * Math.pow(10, token1.decimals),
+          V3_SWAP_ROUTER_ADDRESS,
+          MAX_UINT128,
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
           }
         );
       await approvalTx.wait();
-
 
       const route = routeToRatioResponse.result
 
@@ -1146,7 +1093,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         data: route.methodParameters.calldata,
         to: V3_SWAP_ROUTER_ADDRESS,
         from: walletAddress,
-        value: ethers.BigNumber.from(route.methodParameters.value),
+        // value: ethers.BigNumber.from(route.methodParameters.value),
+        value: ethers.BigNumber.from('100000000000000000'),
         gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
         gasLimit: ethers.BigNumber.from(route.estimatedGasUsed)
           .mul(300)
@@ -1353,7 +1301,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         deadline: Math.floor(Date.now() / 1000 + 1800),
       }
     );
-    
+
     const feeData = await web3Provider.getFeeData();
 
     const token0Contract = new ethers.Contract(
@@ -1514,7 +1462,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         }
       );
     await approvalTx.wait();
-    
+
     const nonce = await web3Provider.getTransactionCount(walletAddress);
     console.log(`Nonce: ${nonce}`);
 

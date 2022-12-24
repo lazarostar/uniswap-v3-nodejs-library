@@ -75,8 +75,8 @@ async function main() {
   // console.log(result)
 
   // 15. Test AddLiquidity function
-  const result = await lib.AddLiquidity(592088, 1, 0.00001)
-  console.log(result)
+  // const result = await lib.AddLiquidity(592088, 1, 0.00001)
+  // console.log(result)
 
   return 0;
 }
