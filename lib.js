@@ -1546,6 +1546,11 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     };
   }
 
+  async function SwapAll(token0, token1) {
+    const token0Amount = await GetAmount(token0)
+    return Swap(token0, token1, token0Amount)
+  }
+
   return {
     GetAmount,
     GetCurrentPrice,
@@ -1563,6 +1568,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     CreatePoolPositionTicks,
     AddLiquidity,
     GetPoolPositionInfo,
+    SwapAll,
     Tokens: Tokens[network],
   };
 }

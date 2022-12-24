@@ -79,7 +79,11 @@ async function main() {
   // console.log(result)
 
   // 16. Test GetPoolPositionInfo function
-  const result = await lib.GetPoolPositionInfo(592088)
+  // const result = await lib.GetPoolPositionInfo(592088)
+  // console.log(result)
+
+  // 17. Test SwapAll function
+  const result = await lib.SwapAll(lib.Tokens.USDC, lib.Tokens.MATIC)
   console.log(result)
 
   return 0;
