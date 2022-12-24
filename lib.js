@@ -288,9 +288,10 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
 
-      return result;
+      return true;
     } catch (e) {
       console.log(`Error occured: ${e.message}`);
+      return false;
     }
   }
 
