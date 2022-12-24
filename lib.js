@@ -360,12 +360,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         .connect(connectedWallet)
         .approve(
           V3_POSITION_NFT_ADDRESS,
-          isOutput
-            ? route.quote
-              .multiply(Math.pow(10, quoteToken.decimals))
-              .multiply(new Fraction(105, 100))
-              .toFixed(0)
-            : amountString,
+          MAX_UINT128,
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
           }
