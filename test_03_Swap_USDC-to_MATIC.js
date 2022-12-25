@@ -15,27 +15,29 @@ async function main() {
   var balance = await lib.GetAmount(lib.Tokens.MATIC);
   console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
+  console.log(`Balance: ${balance} USDC\n`);
 
   // Swapping 1 MATIC worth of USDC to MATIC (after this we should have 1 more MATIC in the wallet)
   var result = await lib.Swap(lib.Tokens.USDC, lib.Tokens.MATIC, 1, true);
-  // console.log(result);
+  console.log(`Result:`);
+  console.log(result);
 
   console.log("\nAfter (we should have 1 more MATIC in the wallet):\n")
   balance = await lib.GetAmount(lib.Tokens.MATIC);
   console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
+  console.log(`Balance: ${balance} USDC\n`);
 
   // Swapping 1 USDC to MATIC (after this we should have 1 USDC less in the wallet)
   result = await lib.Swap(lib.Tokens.USDC, lib.Tokens.MATIC, 1, false);
-  // console.log(result);
+  console.log(`Result:`);
+  console.log(result);
 
   console.log("\nAfter (we should have 1 USDC less in the wallet):\n")
   balance = await lib.GetAmount(lib.Tokens.MATIC);
   console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
+  console.log(`Balance: ${balance} USDC\n`);
 
   return 0;
 }

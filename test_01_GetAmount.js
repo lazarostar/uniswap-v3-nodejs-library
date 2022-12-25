@@ -15,21 +15,23 @@ async function main() {
   var balance = await lib.GetAmount(lib.Tokens.MATIC);
   console.log(`Balance: ${balance} MATIC`);
 
+  // ETH:
+  if (lib.Tokens.hasOwnProperty('ETH')) {
+    balance = await lib.GetAmount(lib.Tokens.ETH);
+    console.log(`Balance: ${balance} ETH`);
+  }
+
   // USDC:
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC`);
 
-  // ETH:
-  balance = await lib.GetAmount(lib.Tokens.ETH);
-  console.log(`Balance: ${balance} ETH`);
+  // WBTC:
+  balance = await lib.GetAmount(lib.Tokens.WBTC);
+  console.log(`Balance: ${balance} WBTC`);
 
   // WETH:
   balance = await lib.GetAmount(lib.Tokens.WETH);
   console.log(`Balance: ${balance} WETH`);
-
-  // WBTC:
-  balance = await lib.GetAmount(lib.Tokens.WBTC);
-  console.log(`Balance: ${balance} WBTC`);
 
   return 0;
 }
