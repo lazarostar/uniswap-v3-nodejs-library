@@ -22,7 +22,7 @@ async function main() {
   }
 
   console.log('WBTC/USDC fee tiers:');
-  var result = await lib.GetFeeTiers(lib.Tokens.WETH, lib.Tokens.USDC);
+  var result = await lib.GetFeeTiers(lib.Tokens.WBTC, lib.Tokens.USDC);
   console.log(result, `\n`);
 
   console.log('WETH/USDC fee tiers:');
