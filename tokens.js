@@ -22,7 +22,6 @@ const Tokens = {
     ),
   },
   [Networks.POLYGON]: {
-    ETH: nativeOnChain(Networks.POLYGON),
     NATIVE: nativeOnChain(Networks.POLYGON),
     MATIC: nativeOnChain(Networks.POLYGON),
     WMATIC: new Token(
