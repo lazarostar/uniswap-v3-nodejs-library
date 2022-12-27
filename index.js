@@ -6,7 +6,7 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
   );
   // 1. Test GetAmount function
   // const balance = await lib.GetAmount(lib.Tokens.MATIC);
@@ -33,8 +33,8 @@ async function main() {
   // console.log(`Token id: ${result}`);
 
   // 5. Test ClosePoolPosition function
-  const result = await lib.ClosePoolPosition(597185);
-  console.log(result);
+  // const result = await lib.ClosePoolPosition(597185);
+  // console.log(result);
 
   // 6. Test GetNFTList function
   // const result = await lib.GetNFTList(true);
@@ -63,8 +63,8 @@ async function main() {
   // console.log(tickLower, tickUpper);
 
   // // 10. Test GetCurrentPriceTick function
-  // const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
-  // console.log(currentTick);
+  const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
+  console.log(currentTick);
 
   // // 13. Test GetNearestTickRangeFromTick function
   // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, currentTick);

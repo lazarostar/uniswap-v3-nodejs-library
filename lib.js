@@ -316,7 +316,7 @@ const __getPoolPositionInfo = async (
   };
 };
 
-function Init(walletAddress, privateKey, network, rpcUrl) {
+function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
   const web3Provider = new ethers.providers.JsonRpcProvider(rpcUrl);
   const router = new AlphaRouter({
     chainId: network,
@@ -328,7 +328,11 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     wallet = new ethers.Wallet(privateKey);
     connectedWallet = wallet.connect(web3Provider);
   } catch (e) {
-    console.log("* Couldn't initialize wallet *");
+    __log__("* Couldn't initialize wallet *");
+  }
+
+  function __log__(...args) {
+    if (debug) console.log(...args)
   }
 
   async function Wrap(amount) {
@@ -342,7 +346,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
 
       const feeData = await web3Provider.getFeeData();
-      console.log(`Wrapping ${amount} ${nativeToken.symbol} ...`);
+      __log__(`Wrapping ${amount} ${nativeToken.symbol} ...`);
       const tx = await contract
         .connect(connectedWallet)
         .deposit({
@@ -368,7 +372,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
 
       const feeData = await web3Provider.getFeeData();
-      console.log(`Unwrapping ${amount} ${wrappedToken.symbol} ...`);
+      __log__(`Unwrapping ${amount} ${wrappedToken.symbol} ...`);
       const tx = await contract
         .connect(connectedWallet)
         .withdraw(ethers.BigNumber.from('' + Math.floor(amount * Math.pow(10, nativeToken.decimals))), {
@@ -442,7 +446,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         JSBI.BigInt(amountString)
       );
 
-      console.log("Routing...");
+      __log__("Routing...");
       const route = await router.route(
         tokenAmount,
         quoteToken,
@@ -458,7 +462,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const quoteAmountString = route.quote
         .multiply(Math.pow(10, quoteToken.decimals))
         .toFixed(0);
-      console.log(`quoteAmountString: ${quoteAmountString}`);
+      __log__(`quoteAmountString: ${quoteAmountString}`);
 
       if (!originalToken0.isNative) {
         const token0Contract = new ethers.Contract(
@@ -468,10 +472,10 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         );
         const allowance = await token0Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
         if (ethers.BigNumber.from(allowance).gt(ethers.BigNumber.from(quoteAmountString)) && ethers.BigNumber.from(allowance).gt(ethers.BigNumber.from(amountString))) {
-          console.log('No need to approve.')
+          __log__('No need to approve.')
         } else {
           const feeData = await web3Provider.getFeeData();
-          console.log(`Approving ${originalToken0.symbol} ...`);
+          __log__(`Approving ${originalToken0.symbol} ...`);
           const approvalTx = await token0Contract
             .connect(connectedWallet)
             .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
@@ -482,7 +486,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       }
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const multicallTx = {
         nonce: nonce,
@@ -539,13 +543,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         web3Provider
       );
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         feeTier
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -595,8 +599,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         immutables.tickSpacing
       );
 
-      console.log(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
-      console.log(`Current Tick: ${state.tick}`);
+      __log__(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
+      __log__(`Current Tick: ${state.tick}`);
 
       const { calldata, value } = NonfungiblePositionManager.addCallParameters(
         Position.fromAmounts({
@@ -622,9 +626,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS)
       if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from('' + Math.floor(amount0 * Math.pow(10, token0.decimals))))) {
-        console.log(`No need to approve ${token0.symbol}`)
+        __log__(`No need to approve ${token0.symbol}`)
       } else {
-        console.log(`Approving ${token0.symbol} ...`);
+        __log__(`Approving ${token0.symbol} ...`);
         let approvalTx = await token0Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -640,9 +644,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS)
       if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from('' + Math.floor(amount1 * Math.pow(10, token1.decimals))))) {
-        console.log(`No need to approve ${token1.symbol}`)
+        __log__(`No need to approve ${token1.symbol}`)
       } else {
-        console.log(`Approving ${token1.symbol} ...`);
+        __log__(`Approving ${token1.symbol} ...`);
         approvalTx = await token1Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -652,7 +656,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       }
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const multicallTx = {
         nonce: nonce,
@@ -666,7 +670,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      console.log(`Signed Tx: ${signedTx}`);
+      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
@@ -697,13 +701,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         positionInfo.fee
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -748,7 +752,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const feeData = await web3Provider.getFeeData();
 
@@ -764,7 +768,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      console.log(`Signed Tx: ${signedTx}`);
+      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
@@ -784,7 +788,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const size = (
         await positionManagerContract.balanceOf(walletAddress)
       ).toNumber();
-      console.log(size);
+      __log__(size);
 
       const promiseList = [];
       for (let i = 0; i < size; i++) {
@@ -873,13 +877,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         positionInfo.fee
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -908,8 +912,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         liquidity: positionInfo.liquidity,
       });
 
-      console.log("amount0:", position.amount0.toSignificant(4));
-      console.log("amount1:", position.amount1.toSignificant(4));
+      __log__("amount0:", position.amount0.toSignificant(4));
+      __log__("amount1:", position.amount1.toSignificant(4));
 
       let unclaimedFee0 = 0,
         unclaimedFee1 = 0;
@@ -928,7 +932,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
 
       const feeData = await web3Provider.getFeeData();
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const unsignedTx =
         await positionManagerContract.populateTransaction.collect(
@@ -946,11 +950,11 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
           }
         );
       unsignedTx.chainId = network;
-      console.log("Unsigned Tx");
-      console.log(unsignedTx);
+      __log__("Unsigned Tx");
+      __log__(unsignedTx);
 
       const signedTx = await wallet.signTransaction(unsignedTx);
-      console.log(`Signed Tx: ${signedTx}`);
+      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const results = await tx.wait();
@@ -984,13 +988,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         positionInfo.fee
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1019,8 +1023,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         liquidity: positionInfo.liquidity,
       });
 
-      console.log("amount0:", position.amount0.toSignificant(4));
-      console.log("amount1:", position.amount1.toSignificant(4));
+      __log__("amount0:", position.amount0.toSignificant(4));
+      __log__("amount1:", position.amount1.toSignificant(4));
 
       let unclaimedFee0 = 0,
         unclaimedFee1 = 0;
@@ -1064,7 +1068,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
 
       for (const fee of possibleFeeTiers) {
-        console.log(`Getting pool with fee ${fee / 10_000}%...`);
+        __log__(`Getting pool with fee ${fee / 10_000}%...`);
         const poolAddress = await factoryContract.getPool(
           token0.address,
           token1.address,
@@ -1072,9 +1076,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         );
         if (poolAddress !== ADDRESS_ZERO) {
           result.push(fee / 10_000);
-          console.log("Okay");
+          __log__("Okay");
         } else {
-          console.log("Not exist");
+          __log__("Not exist");
         }
       }
 
@@ -1099,7 +1103,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         token1.address,
         feeTier * 10_000
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1146,13 +1150,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         web3Provider
       );
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         feeTier
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1229,9 +1233,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         immutables.tickSpacing
       );
 
-      console.log(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
+      __log__(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
 
-      console.log("Routing ...");
+      __log__("Routing ...");
       const routeToRatioResponse = await router.routeToRatio(
         token0Amount,
         token1Amount,
@@ -1267,9 +1271,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         );
         const token0Allowance = await token0Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
         if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from('' + Math.floor(token0Balance * Math.pow(10, token0.decimals))))) {
-          console.log(`No need to approve ${token0.symbol}`)
+          __log__(`No need to approve ${token0.symbol}`)
         } else {
-          console.log(`Approving ${token0.symbol} ...`);
+          __log__(`Approving ${token0.symbol} ...`);
           let approvalTx = await token0Contract
             .connect(connectedWallet)
             .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
@@ -1285,9 +1289,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         );
         const token1Allowance = await token1Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
         if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from('' + Math.floor(token1Balance * Math.pow(10, token1.decimals))))) {
-          console.log(`No need to approve ${token1.symbol}`)
+          __log__(`No need to approve ${token1.symbol}`)
         } else {
-          console.log(`Approving ${token1.symbol} ...`);
+          __log__(`Approving ${token1.symbol} ...`);
           approvalTx = await token1Contract
             .connect(connectedWallet)
             .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
@@ -1299,7 +1303,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         const route = routeToRatioResponse.result;
 
         const nonce = await web3Provider.getTransactionCount(walletAddress);
-        console.log(`Nonce: ${nonce}`);
+        __log__(`Nonce: ${nonce}`);
 
         const multicallTx = {
           nonce: nonce,
@@ -1318,7 +1322,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         const signedTx = await wallet.signTransaction(multicallTx);
 
         const tx = await web3Provider.sendTransaction(signedTx);
-        console.log(`Transaction: ${tx.hash}`);
+        __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
 
         return true;
@@ -1341,13 +1345,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         web3Provider
       );
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         feeTier
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1412,13 +1416,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         web3Provider
       );
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         feeTier
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1490,13 +1494,13 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         web3Provider
       );
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         feeTier
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1526,8 +1530,8 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const tickLower = nearestUsableTick(minTick, immutables.tickSpacing);
       const tickUpper = nearestUsableTick(maxTick, immutables.tickSpacing);
 
-      console.log(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
-      console.log(`Current Tick: ${state.tick}`);
+      __log__(`Tick Lower: ${tickLower}, Tick Upper: ${tickUpper}`);
+      __log__(`Current Tick: ${state.tick}`);
 
       const { calldata, value } = NonfungiblePositionManager.addCallParameters(
         Position.fromAmounts({
@@ -1553,9 +1557,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
       if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from('' + Math.floor(amount0 * Math.pow(10, token0.decimals))))) {
-        console.log(`No need to approve ${token0.symbol}`);
+        __log__(`No need to approve ${token0.symbol}`);
       } else {
-        console.log(`Approving ${token0.symbol} ...`);
+        __log__(`Approving ${token0.symbol} ...`);
         let approvalTx = await token0Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -1571,9 +1575,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
       if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from('' + Math.floor(amount1 * Math.pow(10, token1.decimals))))) {
-        console.log(`No need to approve ${token1.symbol}`);
+        __log__(`No need to approve ${token1.symbol}`);
       } else {
-        console.log(`Approving ${token1.symbol} ...`);
+        __log__(`Approving ${token1.symbol} ...`);
         approvalTx = await token1Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -1583,7 +1587,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       }
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const multicallTx = {
         nonce: nonce,
@@ -1597,7 +1601,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      console.log(`Signed Tx: ${signedTx}`);
+      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
@@ -1628,15 +1632,15 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      console.log(`Token0: ${token0.symbol}, Token1: ${token1.symbol}`);
+      __log__(`Token0: ${token0.symbol}, Token1: ${token1.symbol}`);
 
-      console.log("Getting pool...");
+      __log__("Getting pool...");
       const poolAddress = await factoryContract.getPool(
         token0.address,
         token1.address,
         positionInfo.fee
       );
-      console.log(`Pool: ${poolAddress}`);
+      __log__(`Pool: ${poolAddress}`);
 
       const poolContract = new ethers.Contract(
         poolAddress,
@@ -1666,7 +1670,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         amount1: Math.floor(token1Amount * Math.pow(10, token1.decimals)),
       });
 
-      console.log(`Position liquidity: ${[position.liquidity]}`);
+      __log__(`Position liquidity: ${[position.liquidity]}`);
 
       const { calldata, value } = NonfungiblePositionManager.addCallParameters(
         position,
@@ -1686,9 +1690,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
       if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from('' + Math.floor(token0Amount * Math.pow(10, token0.decimals))))) {
-        console.log(`No need to approve ${token0.symbol}`);
+        __log__(`No need to approve ${token0.symbol}`);
       } else {
-        console.log(`Approving ${token0.symbol} ...`);
+        __log__(`Approving ${token0.symbol} ...`);
         let approvalTx = await token0Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -1704,9 +1708,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       );
       const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
       if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from('' + Math.floor(token1Amount * Math.pow(10, token1.decimals))))) {
-        console.log(`No need to approve ${token1.symbol}`);
+        __log__(`No need to approve ${token1.symbol}`);
       } else {
-        console.log(`Approving ${token1.symbol} ...`);
+        __log__(`Approving ${token1.symbol} ...`);
         approvalTx = await token1Contract
           .connect(connectedWallet)
           .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
@@ -1716,7 +1720,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       }
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
-      console.log(`Nonce: ${nonce}`);
+      __log__(`Nonce: ${nonce}`);
 
       const multicallTx = {
         nonce: nonce,
@@ -1730,7 +1734,7 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      console.log(`Signed Tx: ${signedTx}`);
+      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
