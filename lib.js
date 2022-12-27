@@ -890,6 +890,9 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     const possibleFeeTiers = [100, 500, 3_000, 5_000, 10_000];
     const result = [];
 
+    token0 = token0.isNative ? token0.wrapped : token0
+    token1 = token1.isNative ? token1.wrapped : token1
+
     const factoryContract = new ethers.Contract(
       FACTORY_ADDRESS,
       IUniswapV3FactoryABI,

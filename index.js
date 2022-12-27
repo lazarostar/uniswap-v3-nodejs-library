@@ -51,8 +51,8 @@ async function main() {
   // console.log(result);
 
   // 9. Test GetFeeTiers function
-  // const result = await lib.GetFeeTiers(lib.Tokens.USDT, lib.Tokens.USDC);
-  // console.log(result);
+  const result = await lib.GetFeeTiers(lib.Tokens.MATIC, lib.Tokens.USDC);
+  console.log(result);
 
   // 11. Test CreatePoolPositionMax function
   // const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
@@ -83,8 +83,8 @@ async function main() {
   // console.log(result)
 
   // 17. Test SwapAll function
-  const result = await lib.SwapAll(lib.Tokens.USDC, lib.Tokens.MATIC)
-  console.log(result)
+  // const result = await lib.SwapAll(lib.Tokens.USDC, lib.Tokens.MATIC)
+  // console.log(result)
 
   return 0;
 }
