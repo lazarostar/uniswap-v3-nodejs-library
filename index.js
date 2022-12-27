@@ -17,12 +17,12 @@ async function main() {
   // console.log(`1 MATIC is ${price} USDC`);
 
   // 3. Test Swap function
-  // const result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1, true);
+  // const result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1.5, true);
   // console.log(result);
 
   // 4. Test CreatePoolPosition function
   // const result = await lib.CreatePoolPosition(
-  //   lib.Tokens.WETH,
+  //   lib.Tokens.MATIC,
   //   lib.Tokens.USDC,
   //   0.05,
   //   1260,
@@ -51,8 +51,8 @@ async function main() {
   // console.log(result);
 
   // 9. Test GetFeeTiers function
-  const result = await lib.GetFeeTiers(lib.Tokens.MATIC, lib.Tokens.USDC);
-  console.log(result);
+  // const result = await lib.GetFeeTiers(lib.Tokens.MATIC, lib.Tokens.USDC);
+  // console.log(result);
 
   // 11. Test CreatePoolPositionMax function
   // const result = await lib.CreatePoolPositionMax(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150, 1200);
@@ -63,8 +63,8 @@ async function main() {
   // console.log(tickLower, tickUpper);
 
   // // 10. Test GetCurrentPriceTick function
-  // const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05);
-  // console.log(currentTick);
+  const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
+  console.log(currentTick);
 
   // // 13. Test GetNearestTickRangeFromTick function
   // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, currentTick);

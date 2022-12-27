@@ -71,6 +71,29 @@ const IERC20MinimalABI = [
     type: "function",
   },
   {
+    constant: true,
+    inputs: [
+      {
+        name: "_owner",
+        type: "address"
+      },
+      {
+        name: "_spender",
+        type: "address"
+      }
+    ],
+    name: "allowance",
+    outputs: [
+      {
+        name: "",
+        type: "uint256"
+      }
+    ],
+    payable: false,
+    stateMutability: "view",
+    type: "function"
+  },
+  {
     constant: false,
     inputs: [
       {
@@ -101,7 +124,7 @@ const __getTokenIdFromTransactionLogs = (logs) => {
     if (
       log.address === V3_POSITION_NFT_ADDRESS &&
       log.topics[0] ===
-        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     ) {
       return Number.parseInt(log.topics[3], 16);
     }
@@ -354,19 +377,24 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       console.log(`quoteAmountString: ${quoteAmountString}`);
 
       if (!originalToken0.isNative) {
-        const feeData = await web3Provider.getFeeData();
-        console.log(`Approving ${originalToken0.symbol} ...`);
         const token0Contract = new ethers.Contract(
           originalToken0.address,
           IERC20MinimalABI,
           web3Provider
         );
-        const approvalTx = await token0Contract
-          .connect(connectedWallet)
-          .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
-            gasPrice: feeData.gasPrice.mul(110).div(100),
-          });
-        await approvalTx.wait();
+        const allowance = await token0Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
+        if (ethers.BigNumber.from(allowance).gt(ethers.BigNumber.from(quoteAmountString)) && ethers.BigNumber.from(allowance).gt(ethers.BigNumber.from(amountString))) {
+          console.log('No need to approve.')
+        } else {
+          const feeData = await web3Provider.getFeeData();
+          console.log(`Approving ${originalToken0.symbol} ...`);
+          const approvalTx = await token0Contract
+            .connect(connectedWallet)
+            .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
+              gasPrice: feeData.gasPrice.mul(110).div(100),
+            });
+          await approvalTx.wait();
+        }
       }
 
       const nonce = await web3Provider.getTransactionCount(walletAddress);
@@ -493,26 +521,36 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token0.symbol} ...`);
-    let approvalTx = await token0Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS)
+    if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from(amount0).mul(Math.pow(10, token0.decimals)))) {
+      console.log(`No need to approve ${token0.symbol}`)
+    } else {
+      console.log(`Approving ${token0.symbol} ...`);
+      let approvalTx = await token0Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const token1Contract = new ethers.Contract(
       token1.address,
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token1.symbol} ...`);
-    approvalTx = await token1Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS)
+    if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from(amount1).mul(Math.pow(10, token1.decimals)))) {
+      console.log(`No need to approve ${token1.symbol}`)
+    } else {
+      console.log(`Approving ${token1.symbol} ...`);
+      approvalTx = await token1Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const nonce = await web3Provider.getTransactionCount(walletAddress);
     console.log(`Nonce: ${nonce}`);
@@ -1002,25 +1040,25 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
     ] =
       token0.address === immutables.token0
         ? [
-            token0,
-            token1,
-            minPrice,
-            maxPrice,
-            token0Balance,
-            token1Balance,
-            token0Amount,
-            token1Amount,
-          ]
+          token0,
+          token1,
+          minPrice,
+          maxPrice,
+          token0Balance,
+          token1Balance,
+          token0Amount,
+          token1Amount,
+        ]
         : [
-            token1,
-            token0,
-            1 / maxPrice,
-            1 / minPrice,
-            token1Balance,
-            token0Balance,
-            token1Amount,
-            token0Amount,
-          ];
+          token1,
+          token0,
+          1 / maxPrice,
+          1 / minPrice,
+          token1Balance,
+          token0Balance,
+          token1Amount,
+          token0Amount,
+        ];
 
     const pool = new Pool(
       token0,
@@ -1090,26 +1128,36 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
         IERC20MinimalABI,
         web3Provider
       );
-      console.log(`Approving ${token0.symbol} ...`);
-      let approvalTx = await token0Contract
-        .connect(connectedWallet)
-        .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
-          gasPrice: feeData.gasPrice.mul(110).div(100),
-        });
-      await approvalTx.wait();
+      const token0Allowance = await token0Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
+      if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from(token0Balance).mul(Math.pow(10, token0.decimals)))) {
+        console.log(`No need to approve ${token0.symbol}`)
+      } else {
+        console.log(`Approving ${token0.symbol} ...`);
+        let approvalTx = await token0Contract
+          .connect(connectedWallet)
+          .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
+            gasPrice: feeData.gasPrice.mul(110).div(100),
+          });
+        await approvalTx.wait();
+      }
 
       const token1Contract = new ethers.Contract(
         token1.address,
         IERC20MinimalABI,
         web3Provider
       );
-      console.log(`Approving ${token1.symbol} ...`);
-      approvalTx = await token1Contract
-        .connect(connectedWallet)
-        .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
-          gasPrice: feeData.gasPrice.mul(110).div(100),
-        });
-      await approvalTx.wait();
+      const token1Allowance = await token1Contract.allowance(walletAddress, V3_SWAP_ROUTER_ADDRESS)
+      if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from(token1Balance).mul(Math.pow(10, token1.decimals)))) {
+        console.log(`No need to approve ${token1.symbol}`)
+      } else {
+        console.log(`Approving ${token1.symbol} ...`);
+        approvalTx = await token1Contract
+          .connect(connectedWallet)
+          .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
+            gasPrice: feeData.gasPrice.mul(110).div(100),
+          });
+        await approvalTx.wait();
+      }
 
       const route = routeToRatioResponse.result;
 
@@ -1338,26 +1386,36 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token0.symbol} ...`);
-    let approvalTx = await token0Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
+    if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from(amount0).mul(Math.pow(10, token0.decimals)))) {
+      console.log(`No need to approve ${token0.symbol}`);
+    } else {
+      console.log(`Approving ${token0.symbol} ...`);
+      let approvalTx = await token0Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const token1Contract = new ethers.Contract(
       token1.address,
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token1.symbol} ...`);
-    approvalTx = await token1Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
+    if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from(amount1).mul(Math.pow(10, token1.decimals)))) {
+      console.log(`No need to approve ${token1.symbol}`);
+    } else {
+      console.log(`Approving ${token1.symbol} ...`);
+      approvalTx = await token1Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const nonce = await web3Provider.getTransactionCount(walletAddress);
     console.log(`Nonce: ${nonce}`);
@@ -1455,26 +1513,36 @@ function Init(walletAddress, privateKey, network, rpcUrl) {
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token0.symbol} ...`);
-    let approvalTx = await token0Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token0Allowance = await token0Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
+    if (ethers.BigNumber.from(token0Allowance).gt(ethers.BigNumber.from(token0Amount).mul(Math.pow(10, token0.decimals)))) {
+      console.log(`No need to approve ${token0.symbol}`);
+    } else {
+      console.log(`Approving ${token0.symbol} ...`);
+      let approvalTx = await token0Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const token1Contract = new ethers.Contract(
       token1.address,
       IERC20MinimalABI,
       web3Provider
     );
-    console.log(`Approving ${token1.symbol} ...`);
-    approvalTx = await token1Contract
-      .connect(connectedWallet)
-      .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-      });
-    await approvalTx.wait();
+    const token1Allowance = await token1Contract.allowance(walletAddress, V3_POSITION_NFT_ADDRESS);
+    if (ethers.BigNumber.from(token1Allowance).gt(ethers.BigNumber.from(token1Amount).mul(Math.pow(10, token1.decimals)))) {
+      console.log(`No need to approve ${token1.symbol}`);
+    } else {
+      console.log(`Approving ${token1.symbol} ...`);
+      approvalTx = await token1Contract
+        .connect(connectedWallet)
+        .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
+      await approvalTx.wait();
+    }
 
     const nonce = await web3Provider.getTransactionCount(walletAddress);
     console.log(`Nonce: ${nonce}`);
