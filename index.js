@@ -33,8 +33,8 @@ async function main() {
   // console.log(`Token id: ${result}`);
 
   // 5. Test ClosePoolPosition function
-  // const result = await lib.ClosePoolPosition(592038);
-  // console.log(result);
+  const result = await lib.ClosePoolPosition(597185);
+  console.log(result);
 
   // 6. Test GetNFTList function
   // const result = await lib.GetNFTList(true);
@@ -43,7 +43,7 @@ async function main() {
   // console.log(`Total: ${result.length}`);
 
   // 7. Test CollectUnclaimedFees function
-  // const result = await lib.CollectUnclaimedFees(547177);
+  // const result = await lib.CollectUnclaimedFees(597185);
   // console.log(result);
 
   // 8. Test GetUnclaimedFeeAmounts function
@@ -62,17 +62,17 @@ async function main() {
   // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromPrice(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, 1150);
   // console.log(tickLower, tickUpper);
 
-  // 10. Test GetCurrentPriceTick function
-  const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
-  console.log(currentTick);
+  // // 10. Test GetCurrentPriceTick function
+  // const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
+  // console.log(currentTick);
 
-  // 13. Test GetNearestTickRangeFromTick function
-  const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, currentTick);
-  console.log(tickLower, tickUpper);
+  // // 13. Test GetNearestTickRangeFromTick function
+  // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, currentTick);
+  // console.log(tickLower, tickUpper);
 
-  // 14. Test CreatePoolPositionTicks function
-  const result = await lib.CreatePoolPositionTicks(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, tickLower, tickUpper, 0.5, 1)
-  console.log(result)
+  // // 14. Test CreatePoolPositionTicks function
+  // const result = await lib.CreatePoolPositionTicks(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, tickLower, tickUpper, 0.5, 1)
+  // console.log(result)
 
   // 15. Test AddLiquidity function
   // const result = await lib.AddLiquidity(592088, 1, 0.00001)
