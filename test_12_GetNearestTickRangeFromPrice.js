@@ -15,7 +15,6 @@ async function main() {
   price = await lib.GetCurrentPrice(lib.Tokens.WETH, lib.Tokens.USDC);
   console.log(`1 WETH is ${price} USDC\n`);
 
-
   console.log(`Getting the nearest "WETH/USDC feeTier 0.05" tick range from price ${price}`)
   var result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.WETH, lib.Tokens.USDC, 0.05, price);
   if (result !== false) {
@@ -25,6 +24,10 @@ async function main() {
   }
 
   // ---
+
+  console.log(`Getting the current price of USDC in WETH`)
+  price = await lib.GetCurrentPrice(lib.Tokens.USDC, lib.Tokens.WETH);
+  console.log(`1 USDC is ${price} WETH\n`);
 
   console.log(`Getting the nearest "USDC/WETH feeTier 0.05" tick range from price ${price}`)
   result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.USDC, lib.Tokens.WETH, 0.05, price);
@@ -40,7 +43,6 @@ async function main() {
   price = await lib.GetCurrentPrice(lib.Tokens.MATIC, lib.Tokens.USDC);
   console.log(`1 MATIC is ${price} USDC\n`);
 
-
   console.log(`Getting the nearest "MATIC/USDC feeTier 0.05" tick range from price ${price}`)
   result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, price);
   if (result !== false) {
@@ -50,6 +52,10 @@ async function main() {
   }
 
   // ---
+
+  console.log(`Getting the current price of USDC in MATIC`)
+  price = await lib.GetCurrentPrice(lib.Tokens.USDC, lib.Tokens.MATIC);
+  console.log(`1 USDC is ${price} MATIC\n`);
 
   console.log(`Getting the nearest "USDC/MATIC feeTier 0.05" tick range from price ${price}`)
   result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.USDC, lib.Tokens.MATIC, 0.05, price);
