@@ -9,10 +9,12 @@ async function main() {
     process.env.RPC_URL
   );
 
-  // 4. Test GetPoolPositionInfo function
+  // 6. Test GetNFTList function
 
-  const result = await lib.GetPoolPositionInfo(613718)
-  console.log(result)
+  const result = await lib.GetNFTList(false);
+  console.log(result);
+  console.log("===========");
+  console.log(`Total: ${result.length}`);
 
   return 0;
 }
