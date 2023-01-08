@@ -1240,9 +1240,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0Amount,
         token1Amount,
         new Position({
-          pool,
-          tickLower,
-          tickUpper,
+          pool: pool,
+          tickLower: tickLower,
+          tickUpper: tickUpper,
           liquidity: 1,
         }),
         {
@@ -1309,13 +1309,10 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           nonce: nonce,
           data: route.methodParameters.calldata,
           to: V3_SWAP_ROUTER_ADDRESS,
+          value: ethers.BigNumber.from(route.methodParameters.value),
           from: walletAddress,
-          // value: ethers.BigNumber.from(route.methodParameters.value),
-          value: ethers.BigNumber.from("100000000000000000"),
-          gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
-          gasLimit: ethers.BigNumber.from(route.estimatedGasUsed)
-            .mul(300)
-            .div(100),
+          gasPrice: ethers.BigNumber.from(route.gasPriceWei),
+          gasLimit: 1_000_000,
           chainId: network,
         };
 
