@@ -29,7 +29,7 @@ async function main() {
   );
   console.log(`Pool id: ${result}\n`);
 
-  console.log("After (we should have 0.001 less WETH and 1 less USDC in the wallet) :\n")
+  console.log("After (we should have 0.001 WETH less and 1 USDC less in the wallet) :\n")
   balance = await lib.GetAmount(lib.Tokens.WETH);
   console.log(`Balance: ${balance} WETH`);
   balance = await lib.GetAmount(lib.Tokens.USDC);

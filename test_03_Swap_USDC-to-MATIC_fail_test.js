@@ -21,7 +21,7 @@ async function main() {
   var result = await lib.Swap(lib.Tokens.USDC, lib.Tokens.MATIC, 100, false);
   console.log(`Result: ${result}\n`);
 
-  console.log("After (we should have the same amount if we did not have 100 USDC in the wallet at the beginning) :\n")
+  console.log("After (we should have the same amount if we didn't have 100 USDC in the wallet at the beginning) :\n")
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC`);
   balance = await lib.GetAmount(lib.Tokens.MATIC);

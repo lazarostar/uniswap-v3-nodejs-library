@@ -12,26 +12,26 @@ async function main() {
   // 4. Test CreatePoolPosition function
 
   console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  var balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC\n`);
 
-  console.log(`Creating new pool USDC/WETH feeTier: 0.05, price range: 1255 - 1265, WETH amount: 0.001, USDC amount: 1`)
+  console.log(`Creating new pool MATIC/USDC feeTier: 0.05, price range: 0.70 - 0.90, MATIC amount: 1, USDC amount: 1`)
   var result = await lib.CreatePoolPosition(
+    lib.Tokens.MATIC,
     lib.Tokens.USDC,
-    lib.Tokens.WETH,
     0.05,
-    0.00079051, // = 1/1265
-    0.00079681, // = 1/1255
+    0.70,
+    0.90,
     1,
-    0.001
+    1
   );
   console.log(`Pool id: ${result}\n`);
 
-  console.log("After (we should have 0.001 WETH less and 1 USDC less in the wallet) :\n")
-  balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  console.log("After (we should have 1 MATIC less and 1 USDC less in the wallet) :\n")
+  balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC\n`);
 
