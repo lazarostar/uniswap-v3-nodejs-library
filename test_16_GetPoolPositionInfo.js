@@ -11,7 +11,7 @@ async function main() {
 
   // 4. Test GetPoolPositionInfo function
 
-  const result = await lib.GetPoolPositionInfo(613718)
+  const result = await lib.GetPoolPositionInfo(613794);
   console.log(result)
 
   return 0;
