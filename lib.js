@@ -1798,6 +1798,60 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     return Swap(token0, token1, token0Amount);
   }
 
+  async function GetPoolData(token0, token1, feeTier) {
+    feeTier *= 10000;
+    try {
+      if (token0.isNative) {
+        token0 = token0.wrapped
+      }
+      if (token1.isNative) {
+        token1 = token1.wrapped
+      }
+    } catch (e) {
+      return -1
+    }
+
+    try {
+      const factoryContract = new ethers.Contract(
+        FACTORY_ADDRESS,
+        IUniswapV3FactoryABI,
+        web3Provider
+      );
+
+      __log__("Getting pool...");
+      const poolAddress = await factoryContract.getPool(
+        token0.address,
+        token1.address,
+        feeTier
+      );
+      __log__(`Pool: ${poolAddress}`);
+
+      const poolContract = new ethers.Contract(
+        poolAddress,
+        IUniswapV3PoolABI,
+        web3Provider
+      );
+
+      const [immutables, state] = await Promise.all([
+        __getPoolImmutables(poolContract),
+        __getPoolState(poolContract),
+      ]);
+
+      [token0, token1,] =
+        token0.address === immutables.token0
+          ? [token0, token1,]
+          : [token1, token0];
+
+      return {
+        spacing: immutables.tickSpacing,
+        token0: token0.symbol,
+        token1: token1.symbol,
+      }
+    } catch (e) {
+      return false
+    }
+  }
+
   return {
     Wrap,
     Unwrap,
@@ -1819,6 +1873,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     AddLiquidity,
     GetPoolPositionInfo,
     SwapAll,
+    GetPoolData,
     Tokens: Tokens[network],
   };
 }

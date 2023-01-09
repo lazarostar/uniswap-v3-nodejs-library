@@ -63,8 +63,8 @@ async function main() {
   // console.log(tickLower, tickUpper);
 
   // // 10. Test GetCurrentPriceTick function
-  const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
-  console.log(currentTick);
+  // const currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
+  // console.log(currentTick);
 
   // // 13. Test GetNearestTickRangeFromTick function
   // const [tickLower, tickUpper] = await lib.GetNearestTickRangeFromTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, currentTick);
@@ -89,6 +89,10 @@ async function main() {
   // Test Wrap function
   // const result = await lib.UnwrapAll()
   // console.log(result)
+
+  // Test GetPoolData() function
+  const result = await lib.GetPoolData(lib.Tokens.USDC, lib.Tokens.WBTC, 0.05)
+  console.log(result)
 
   return 0;
 }
