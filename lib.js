@@ -826,28 +826,28 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
             );
           return {
             id: tokenIdList[i],
-            minTick: position.tickLower,
-            maxTick: position.tickUpper,
+            minTick: Number(position.tickLower),
+            maxTick: Number(position.tickUpper),
             isActivePosition: isActive,
             isInRange: tick >= position.tickLower && tick <= position.tickUpper,
             token0: token0.symbol,
             token1: token1.symbol,
-            feeTier: position.fee / 10000 + "%",
-            liquidityToken0: amount0,
-            liquidityToken1: amount1,
-            unclaimedFee0,
-            unclaimedFee1,
-            minPrice: tickToPrice(
+            feeTier: position.fee / 10000,
+            liquidityToken0: Number(amount0),
+            liquidityToken1: Number(amount1),
+            unclaimedFee0: Number(unclaimedFee0),
+            unclaimedFee1: Number(unclaimedFee1),
+            minPrice: Number(tickToPrice(
               token0,
               token1,
               position.tickLower
-            ).toSignificant(5),
-            maxPrice: tickToPrice(
+            ).toSignificant(5)),
+            maxPrice: Number(tickToPrice(
               token0,
               token1,
               position.tickUpper
-            ).toSignificant(5),
-            currentPrice: tickToPrice(token0, token1, tick).toSignificant(5),
+            ).toSignificant(5)),
+            currentPrice: Number(tickToPrice(token0, token1, tick).toSignificant(5)),
           };
         })
       );
@@ -959,8 +959,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const tx = await web3Provider.sendTransaction(signedTx);
       const results = await tx.wait();
       return {
-        token0: unclaimedFee0,
-        token1: unclaimedFee1,
+        token0: Number(unclaimedFee0),
+        token1: Number(unclaimedFee1),
       };
     } catch (e) {
       return {
@@ -1042,8 +1042,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       ).toPrecision(4);
 
       return {
-        token0: unclaimedFee0,
-        token1: unclaimedFee1,
+        token0: Number(unclaimedFee0),
+        token1: Number(unclaimedFee1),
       };
     } catch (e) {
       return {
@@ -1769,24 +1769,24 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         );
       return {
         id: tokenId,
-        minTick: position.tickLower,
-        maxTick: position.tickUpper,
+        minTick: Number(position.tickLower),
+        maxTick: Number(position.tickUpper),
         isActivePosition: isActive,
         isInRange: tick >= position.tickLower && tick <= position.tickUpper,
         token0: token0.symbol,
         token1: token1.symbol,
-        feeTier: position.fee / 10000 + "%",
-        liquidityToken0: amount0,
-        liquidityToken1: amount1,
-        unclaimedFee0,
-        unclaimedFee1,
-        minPrice: tickToPrice(token0, token1, position.tickLower).toSignificant(
-          5
+        feeTier: position.fee / 10000,
+        liquidityToken0: Number(amount0),
+        liquidityToken1: Number(amount1),
+        unclaimedFee0: Number(unclaimedFee0),
+        unclaimedFee1: Number(unclaimedFee1),
+        minPrice: Number(tickToPrice(token0, token1, position.tickLower).toSignificant(
+          5)
         ),
-        maxPrice: tickToPrice(token0, token1, position.tickUpper).toSignificant(
-          5
+        maxPrice: Number(tickToPrice(token0, token1, position.tickUpper).toSignificant(
+          5)
         ),
-        currentPrice: tickToPrice(token0, token1, tick).toSignificant(5),
+        currentPrice: Number(tickToPrice(token0, token1, tick).toSignificant(5)),
       };
     } catch (e) {
       return 0
