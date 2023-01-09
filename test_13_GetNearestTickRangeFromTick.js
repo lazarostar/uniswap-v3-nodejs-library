@@ -40,7 +40,7 @@ async function main() {
   // ---
 
   console.log(`Getting the current tick value for USDC/MATIC feeTier 0.05`)
-  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.MATIC);
+  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.MATIC, 0.05);
   console.log(`Current tick is ${currentTick}\n`);
 
   console.log(`Getting the nearest "USDC/MATIC feeTier 0.05" tick range from tick ${currentTick}`)
@@ -54,7 +54,7 @@ async function main() {
   // ---
 
   console.log(`Getting the current tick value for MATIC/USDC feeTier 0.05`)
-  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC);
+  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
   console.log(`Current tick is ${currentTick}\n`);
 
   console.log(`Getting the nearest "MATIC/USDC feeTier 0.05" tick range from tick ${currentTick}`)
