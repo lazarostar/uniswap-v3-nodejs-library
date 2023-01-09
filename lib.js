@@ -1328,6 +1328,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
   }
 
   async function GetNearestTickRangeFromPrice(token0, token1, feeTier, price) {
+    if (token0.isNative) token0 = token0.wrapped
+    if (token1.isNative) token1 = token1.wrapped
+
     const [inputToken0, inputToken1] = [token0, token1];
 
     feeTier *= 10_000;
