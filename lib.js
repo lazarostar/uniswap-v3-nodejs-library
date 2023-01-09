@@ -1319,11 +1319,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
 
-        return true;
+        return __getTokenIdFromTransactionLogs(result.logs);
       }
       return false;
     } catch (e) {
-      return false
+      return false;
     }
   }
 
