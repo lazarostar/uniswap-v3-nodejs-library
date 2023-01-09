@@ -1042,14 +1042,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       ).toPrecision(4);
 
       return {
-        token0: Number(unclaimedFee0),
-        token1: Number(unclaimedFee1),
+        [token0.symbol]: Number(unclaimedFee0),
+        [token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
-      return {
-        token0: -1,
-        token1: -1,
-      }
+      return false;
     }
   }
 
