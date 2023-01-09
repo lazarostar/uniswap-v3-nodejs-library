@@ -389,6 +389,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     const nativeToken = nativeOnChain(network)
     const wrappedToken = nativeToken.wrapped
     const balance = await GetAmount(wrappedToken)
+    if (balance <= 0) {
+      return false
+    }
     const result = await Unwrap(balance)
     return result
   }
