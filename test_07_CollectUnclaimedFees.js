@@ -17,8 +17,8 @@ async function main() {
   console.log(result, `\n`)
 
   console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  var balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC\n`);
 
@@ -28,8 +28,8 @@ async function main() {
   console.log(result, `\n`);
 
   console.log("After:\n")
-  balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC\n`);
 
