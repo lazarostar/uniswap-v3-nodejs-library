@@ -1772,6 +1772,28 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     }
   }
 
+  async function AddLiquidityMax(tokenId) {
+    try {
+      const positionManagerContract = new ethers.Contract(
+        V3_POSITION_NFT_ADDRESS,
+        INonfungiblePositionManagerABI,
+        web3Provider.getSigner(wallet.address)
+      );
+
+      const positionInfo = await positionManagerContract.positions(tokenId);
+      const token0 = __getTokenByAddress(positionInfo.token0, network);
+      const token1 = __getTokenByAddress(positionInfo.token1, network);
+
+      let token0Balance = await GetAmount(token0);
+      let token1Balance = await GetAmount(token1);
+
+      const result = await AddLiquidity(tokenId, token0Balance, token1Balance);
+      return result;
+    } catch (e) {
+      return false;
+    }
+  }
+
   async function GetPoolPositionInfo(tokenId) {
     try {
       const positionManagerContract = new ethers.Contract(
@@ -1905,6 +1927,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     GetNearestTickRangeFromPrice,
     GetNearestTickRangeFromTick,
     AddLiquidity,
+    AddLiquidityMax,
     GetPoolPositionInfo,
     SwapAll,
     GetPoolData,
