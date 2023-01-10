@@ -778,7 +778,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     let token0Balance = await GetAmount(token0);
     let token1Balance = await GetAmount(token1);
 
-    return CreatePoolPosition(
+    const result = await CreatePoolPosition(
       token0,
       token1,
       feeTier,
@@ -787,6 +787,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       token0Balance,
       token1Balance
     );
+
+    return result;
   }
 
   async function CreatePoolPositionTicks(
@@ -1022,7 +1024,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     let token0Balance = await GetAmount(token0);
     let token1Balance = await GetAmount(token1);
 
-    return CreatePoolPositionTicks(
+    const result = CreatePoolPositionTicks(
       token0,
       token1,
       feeTier,
@@ -1031,6 +1033,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       token0Balance,
       token1Balance
     );
+
+    await result;
   }
 
   async function ClosePoolPosition(tokenId) {
@@ -1567,12 +1571,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __getPoolState(poolContract),
       ]);
 
-      // [token0, token1, tick] =
-      //   token0.address === immutables.token0
-      //     ? [token0, token1, tick]
-      //     : [token1, token0, -tick];
+      [token0, token1, tick] =
+        token0.address === immutables.token0
+          ? [token0, token1, tick]
+          : [token1, token0, -tick];
 
-      const nearestTick = nearestUsableTick(tick, immutables.tickSpacing);
+      // const nearestTick = nearestUsableTick(tick, immutables.tickSpacing);
 
       let tickLower, tickUpper;
       if (nearestTick > tick) {
@@ -1799,7 +1803,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
   async function SwapAll(token0, token1) {
     const token0Amount = await GetAmount(token0);
-    return Swap(token0, token1, token0Amount);
+    const result = await Swap(token0, token1, token0Amount);
+    return result;
   }
 
   async function GetPoolData(token0, token1, feeTier) {
