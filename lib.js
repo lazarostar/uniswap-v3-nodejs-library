@@ -1840,7 +1840,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ),
       };
     } catch (e) {
-      return 0;
+      return false;
     }
   }
 
