@@ -27,7 +27,7 @@ async function main() {
   );
   console.log(`Pool id: ${result}\n`);
 
-  console.log("After (we should have 0 WETH and 0 USDC in the wallet because we should have added all those to the new pool) :\n")
+  console.log("After (we should have 0 WETH and 0 USDC in the wallet because we just added all those to the new pool) :\n")
   balance = await lib.GetAmount(lib.Tokens.WETH);
   console.log(`Balance: ${balance} WETH`);
   balance = await lib.GetAmount(lib.Tokens.USDC);

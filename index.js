@@ -94,6 +94,10 @@ async function main() {
   // const result = await lib.UnwrapAll()
   // console.log(result)
 
+  // 20. Test CreatePoolPositionTicksMax function
+  // const result = await lib.CreatePoolPositionTicks(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, tickLower, tickUpper)
+  // console.log(result)
+
   return 0;
 }
 

@@ -18,7 +18,7 @@ async function main() {
   console.log(`Balance: ${balance} USDC\n`);
 
   console.log(`Closing pool position`)
-  const result = await lib.ClosePoolPosition(613721);
+  const result = await lib.ClosePoolPosition(618274);
   console.log(`Result: ${result}\n`);
 
   console.log(`After:\n`)
