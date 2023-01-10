@@ -11,21 +11,21 @@ async function main() {
 
   // 18. Test GetPoolData() function
 
-  console.log(`Getting pool data dor the WETH/USDC feeTier: 0.05 pool`)
+  console.log(`Getting pool data for the WETH/USDC feeTier: 0.05 pool`)
   var result = await lib.GetPoolData(lib.Tokens.WETH, lib.Tokens.USDC, 0.05)
   console.log(result, `\n`);
 
-  console.log(`Getting pool data dor the USDC/WETH feeTier: 0.05 pool`)
+  console.log(`Getting pool data for the USDC/WETH feeTier: 0.05 pool`)
   result = await lib.GetPoolData(lib.Tokens.USDC, lib.Tokens.WETH, 0.05)
   console.log(result, `\n`);
 
   // ---
 
-  console.log(`Getting pool data dor the MATIC/USDC feeTier: 0.05 pool`)
+  console.log(`Getting pool data for the MATIC/USDC feeTier: 0.05 pool`)
   result = await lib.GetPoolData(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05)
   console.log(result, `\n`);
 
-  console.log(`Getting pool data dor the USDC/MATIC feeTier: 0.05 pool`)
+  console.log(`Getting pool data for the USDC/MATIC feeTier: 0.05 pool`)
   result = await lib.GetPoolData(lib.Tokens.USDC, lib.Tokens.MATIC, 0.05)
   console.log(result, `\n`);
 

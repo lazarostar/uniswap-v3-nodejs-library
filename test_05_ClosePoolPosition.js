@@ -11,21 +11,26 @@ async function main() {
 
   // 5. Test ClosePoolPosition function
 
+  const poolID = 613794;
+
+  var result = await lib.GetUnclaimedFeeAmounts(poolID);
+  console.log(result);
+
   console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
-  balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  var balance = await lib.GetAmount(lib.Tokens.USDC);
+  console.log(`Balance: ${balance} USDC`);
+  balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC\n`);
 
   console.log(`Closing pool position`)
-  const result = await lib.ClosePoolPosition(618274);
+  result = await lib.ClosePoolPosition(poolID);
   console.log(`Result: ${result}\n`);
 
   console.log(`After:\n`)
-  balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  console.log(`Balance: ${balance} USDC`);
+  balance = await lib.GetAmount(lib.Tokens.MATIC);
+  console.log(`Balance: ${balance} MATIC\n`);
 
   return 0;
 }
