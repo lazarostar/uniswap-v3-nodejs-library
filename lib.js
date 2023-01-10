@@ -1457,7 +1457,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __getPoolState(poolContract),
       ]);
 
-      return immutables.token0 === token0.address ? state.tick : -state.tick;
+      // return immutables.token0 === token0.address ? state.tick : -state.tick;
+      return state.tick;
     } catch (e) {
       return false;
     }
@@ -1527,8 +1528,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      if (inputToken0.address === token0.address) return [tickLower, tickUpper];
-      return [-tickUpper, -tickLower];
+      // if (inputToken0.address === token0.address) return [tickLower, tickUpper];
+      // return [-tickUpper, -tickLower];
+      return [tickLower, tickUpper];
     } catch (e) {
       return 0;
     }
@@ -1588,8 +1590,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      if (inputToken0.address === token0.address) return [tickLower, tickUpper];
-      return [-tickUpper, -tickLower];
+      // if (inputToken0.address === token0.address) return [tickLower, tickUpper];
+      // return [-tickUpper, -tickLower];
+      return [tickLower, tickUpper];
     } catch (e) {
       return 0;
     }
