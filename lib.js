@@ -1304,10 +1304,10 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
-      const results = await tx.wait();
+      await tx.wait();
       return {
-        token0: Number(unclaimedFee0),
-        token1: Number(unclaimedFee1),
+        [token0.symbol]: Number(unclaimedFee0),
+        [token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
       return false;
