@@ -1599,7 +1599,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     }
   }
 
-  async function AddLiquidity(tokenId, token0Amount, token1Amount) {
+  async function AddLiquidity(tokenId, amount0, amount1) {
     try {
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
@@ -1616,6 +1616,15 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const positionInfo = await positionManagerContract.positions(tokenId);
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
+
+      let token0Amount = CurrencyAmount.fromRawAmount(
+        token0,
+        Math.floor(amount0 * Math.pow(10, token0.decimals))
+      );
+      let token1Amount = CurrencyAmount.fromRawAmount(
+        token1,
+        Math.floor(amount1 * Math.pow(10, token1.decimals))
+      );
 
       __log__(`Token0: ${token0.symbol}, Token1: ${token1.symbol}`);
 
@@ -1651,99 +1660,114 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         pool,
         tickLower: positionInfo.tickLower,
         tickUpper: positionInfo.tickUpper,
-        amount0: Math.floor(token0Amount * Math.pow(10, token0.decimals)),
-        amount1: Math.floor(token1Amount * Math.pow(10, token1.decimals)),
+        amount0: Math.floor(amount0 * Math.pow(10, token0.decimals)),
+        amount1: Math.floor(amount1 * Math.pow(10, token1.decimals)),
       });
 
-      __log__(`Position liquidity: ${[position.liquidity]}`);
-
-      const { calldata, value } = NonfungiblePositionManager.addCallParameters(
+      __log__("Routing ...");
+      const routeToRatioResponse = await router.routeToRatio(
+        token0Amount,
+        token1Amount,
         position,
         {
-          tokenId: tokenId,
-          slippageTolerance: new Percent(5, 100),
-          deadline: Math.floor(Date.now() / 1000 + 1800),
+          ratioErrorTolerance: new Fraction(1, 100),
+          maxIterations: 6,
+        },
+        {
+          swapOptions: {
+            recipient: walletAddress,
+            slippageTolerance: new Percent(5, 100),
+            deadline: Math.floor(Date.now() / 1000 + 1800),
+          },
+          addLiquidityOptions: {
+            tokenId,
+          },
         }
       );
 
-      const feeData = await web3Provider.getFeeData();
+      if (routeToRatioResponse.status == SwapToRatioStatus.SUCCESS) {
+        const feeData = await web3Provider.getFeeData();
 
-      const token0Contract = new ethers.Contract(
-        token0.address,
-        IERC20MinimalABI,
-        web3Provider
-      );
-      const token0Allowance = await token0Contract.allowance(
-        walletAddress,
-        V3_POSITION_NFT_ADDRESS
-      );
-      if (
-        ethers.BigNumber.from(token0Allowance).gt(
-          ethers.BigNumber.from(
-            "" + Math.floor(token0Amount * Math.pow(10, token0.decimals))
+        const token0Contract = new ethers.Contract(
+          token0.address,
+          IERC20MinimalABI,
+          web3Provider
+        );
+        const token0Allowance = await token0Contract.allowance(
+          walletAddress,
+          V3_SWAP_ROUTER_ADDRESS
+        );
+        if (
+          ethers.BigNumber.from(token0Allowance).gt(
+            ethers.BigNumber.from(
+              "" + Math.floor(amount0 * Math.pow(10, token0.decimals))
+            )
           )
-        )
-      ) {
-        __log__(`No need to approve ${token0.symbol}`);
-      } else {
-        __log__(`Approving ${token0.symbol} ...`);
-        let approvalTx = await token0Contract
-          .connect(connectedWallet)
-          .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-            gasPrice: feeData.gasPrice.mul(110).div(100),
-          });
-        await approvalTx.wait();
-      }
+        ) {
+          __log__(`No need to approve ${token0.symbol}`);
+        } else {
+          __log__(`Approving ${token0.symbol} ...`);
+          let approvalTx = await token0Contract
+            .connect(connectedWallet)
+            .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
+              gasPrice: feeData.gasPrice.mul(110).div(100),
+            });
+          await approvalTx.wait();
+        }
 
-      const token1Contract = new ethers.Contract(
-        token1.address,
-        IERC20MinimalABI,
-        web3Provider
-      );
-      const token1Allowance = await token1Contract.allowance(
-        walletAddress,
-        V3_POSITION_NFT_ADDRESS
-      );
-      if (
-        ethers.BigNumber.from(token1Allowance).gt(
-          ethers.BigNumber.from(
-            "" + Math.floor(token1Amount * Math.pow(10, token1.decimals))
+        const token1Contract = new ethers.Contract(
+          token1.address,
+          IERC20MinimalABI,
+          web3Provider
+        );
+        const token1Allowance = await token1Contract.allowance(
+          walletAddress,
+          V3_SWAP_ROUTER_ADDRESS
+        );
+        if (
+          ethers.BigNumber.from(token1Allowance).gt(
+            ethers.BigNumber.from(
+              "" + Math.floor(amount1 * Math.pow(10, token1.decimals))
+            )
           )
-        )
-      ) {
-        __log__(`No need to approve ${token1.symbol}`);
-      } else {
-        __log__(`Approving ${token1.symbol} ...`);
-        approvalTx = await token1Contract
-          .connect(connectedWallet)
-          .approve(V3_POSITION_NFT_ADDRESS, MAX_UINT128, {
-            gasPrice: feeData.gasPrice.mul(110).div(100),
-          });
-        await approvalTx.wait();
+        ) {
+          __log__(`No need to approve ${token1.symbol}`);
+        } else {
+          __log__(`Approving ${token1.symbol} ...`);
+          approvalTx = await token1Contract
+            .connect(connectedWallet)
+            .approve(V3_SWAP_ROUTER_ADDRESS, MAX_UINT128, {
+              gasPrice: feeData.gasPrice.mul(110).div(100),
+            });
+          await approvalTx.wait();
+        }
+
+        const route = routeToRatioResponse.result;
+
+        const nonce = await web3Provider.getTransactionCount(walletAddress);
+        __log__(`Nonce: ${nonce}`);
+
+        const multicallTx = {
+          nonce: nonce,
+          data: route.methodParameters.calldata,
+          to: V3_SWAP_ROUTER_ADDRESS,
+          value: ethers.BigNumber.from(route.methodParameters.value),
+          from: walletAddress,
+          gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
+          gasLimit: 1_000_000,
+          chainId: network,
+        };
+
+        const signedTx = await wallet.signTransaction(multicallTx);
+
+        const tx = await web3Provider.sendTransaction(signedTx);
+        __log__(`Transaction: ${tx.hash}`);
+        await tx.wait();
+        return true;
       }
-
-      const nonce = await web3Provider.getTransactionCount(walletAddress);
-      __log__(`Nonce: ${nonce}`);
-
-      const multicallTx = {
-        nonce: nonce,
-        data: calldata,
-        to: V3_POSITION_NFT_ADDRESS,
-        from: walletAddress,
-        value: ethers.BigNumber.from(value),
-        gasPrice: feeData.gasPrice.mul(110).div(100),
-        gasLimit: 1_000_000,
-        chainId: network,
-      };
-
-      const signedTx = await wallet.signTransaction(multicallTx);
-      __log__(`Signed Tx: ${signedTx}`);
-
-      const tx = await web3Provider.sendTransaction(signedTx);
-      const result = await tx.wait();
-
-      return true;
+      return false;
     } catch (e) {
+      __log__(e.message);
       return false;
     }
   }

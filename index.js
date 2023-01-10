@@ -7,6 +7,7 @@ async function main() {
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
     process.env.RPC_URL,
+    true
   );
   // 1. Test GetAmount function
   // const balance = await lib.GetAmount(lib.Tokens.MATIC);
@@ -75,8 +76,8 @@ async function main() {
   // console.log(result)
 
   // 15. Test AddLiquidity function
-  // const result = await lib.AddLiquidity(592088, 1, 0.00001)
-  // console.log(result)
+  const result = await lib.AddLiquidity(617992, 0.1, 0.2);
+  console.log(result);
 
   // 16. Test GetPoolPositionInfo function
   // const result = await lib.GetPoolPositionInfo(592088)
