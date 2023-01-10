@@ -1576,7 +1576,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           ? [token0, token1, tick]
           : [token1, token0, -tick];
 
-      // const nearestTick = nearestUsableTick(tick, immutables.tickSpacing);
+      const nearestTick = nearestUsableTick(tick, immutables.tickSpacing);
 
       let tickLower, tickUpper;
       if (nearestTick > tick) {
