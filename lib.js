@@ -1024,7 +1024,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     let token0Balance = await GetAmount(token0);
     let token1Balance = await GetAmount(token1);
 
-    const result = CreatePoolPositionTicks(
+    const result = await CreatePoolPositionTicks(
       token0,
       token1,
       feeTier,
@@ -1034,7 +1034,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       token1Balance
     );
 
-    await result;
+    return result;
   }
 
   async function ClosePoolPosition(tokenId) {
