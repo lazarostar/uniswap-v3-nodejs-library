@@ -17,13 +17,13 @@ async function main() {
   balance = await lib.GetAmount(lib.Tokens.USDC);
   console.log(`Balance: ${balance} USDC\n`);
 
-  console.log(`Creating new pool WETH/USDC feeTier: 0.05, price range: 1250 - 1275, WETH amount: 0.001, USDC amount: 1`)
+  console.log(`Creating new pool WETH/USDC feeTier: 0.05, price range: 1325 - 1340, WETH amount: 0.001, USDC amount: 1`)
   var result = await lib.CreatePoolPosition(
     lib.Tokens.WETH,
     lib.Tokens.USDC,
     0.05,
-    1250,
-    1275,
+    1325,
+    1340,
     0.001,
     1
   );
