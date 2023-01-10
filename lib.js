@@ -327,6 +327,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     connectedWallet = wallet.connect(web3Provider);
   } catch (e) {
     __log__("* Couldn't initialize wallet *");
+    return false;
   }
 
   function __log__(...args) {
@@ -1140,7 +1141,6 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const size = (
         await positionManagerContract.balanceOf(walletAddress)
       ).toNumber();
-      __log__(size);
 
       const promiseList = [];
       for (let i = 0; i < size; i++) {
@@ -1162,7 +1162,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         positionInfoList.map(async (position, i) => {
           const token0 = __getTokenByAddress(position.token0, network);
           const token1 = __getTokenByAddress(position.token1, network);
-          const isActive = position.liquidity.toNumber() === 0 ? false : true;
+          const isActive = Number(position.liquidity) === 0 ? false : true;
           const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
             await __getPoolPositionInfo(
               web3Provider,
@@ -1205,7 +1205,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ? positionList.filter((position) => position.isActivePosition)
         : positionList;
     } catch (e) {
-      return [];
+      return false;
     }
   }
 
@@ -1428,7 +1428,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return result;
     } catch (e) {
-      return [];
+      return false;
     }
   }
 
@@ -1461,7 +1461,6 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       ]);
 
       return immutables.token0 === token0.address ? state.tick : -state.tick;
-      // return state.tick;
     } catch (e) {
       return false;
     }
@@ -1533,9 +1532,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       if (inputToken0.address === token0.address) return [tickLower, tickUpper];
       return [-tickUpper, -tickLower];
-      // return [tickLower, tickUpper];
     } catch (e) {
-      return 0;
+      return false;
     }
   }
 
@@ -1593,9 +1591,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       if (inputToken0.address === token0.address) return [tickLower, tickUpper];
       return [-tickUpper, -tickLower];
-      // return [tickLower, tickUpper];
     } catch (e) {
-      return 0;
+      return false;
     }
   }
 
