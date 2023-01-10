@@ -1540,8 +1540,6 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     if (token0.isNative) token0 = token0.wrapped;
     if (token1.isNative) token1 = token1.wrapped;
 
-    const [inputToken0, inputToken1] = [token0, token1];
-
     feeTier *= 10_000;
 
     try {
@@ -1570,10 +1568,10 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __getPoolState(poolContract),
       ]);
 
-      [token0, token1, tick] =
-        token0.address === immutables.token0
-          ? [token0, token1, tick]
-          : [token1, token0, -tick];
+      // [token0, token1, tick] =
+      //   token0.address === immutables.token0
+      //     ? [token0, token1, tick]
+      //     : [token1, token0, -tick];
 
       const nearestTick = nearestUsableTick(tick, immutables.tickSpacing);
 
