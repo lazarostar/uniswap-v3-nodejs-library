@@ -351,6 +351,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           "" + Math.floor(amount * Math.pow(10, nativeToken.decimals))
         ),
         gasPrice: feeData.gasPrice.mul(110).div(100),
+        gasLimit: 1_000_000,
       });
       await tx.wait();
       return true;
