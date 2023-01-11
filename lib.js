@@ -1121,7 +1121,6 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
