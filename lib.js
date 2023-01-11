@@ -1801,7 +1801,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const position = await positionManagerContract.positions(tokenId);
       const token0 = __getTokenByAddress(position.token0, network);
       const token1 = __getTokenByAddress(position.token1, network);
-      const isActive = position.liquidity.toNumber() === 0 ? false : true;
+      const isActive = Number(position.liquidity) === 0 ? false : true;
       const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
         await __getPoolPositionInfo(
           web3Provider,
@@ -1839,7 +1839,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ),
       };
     } catch (e) {
-      return 0;
+      return false;
     }
   }
 
