@@ -1124,8 +1124,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
+
+      await UnwrapAll();
+
       return true;
     } catch (e) {
+      await UnwrapAll();
       return false;
     }
   }
