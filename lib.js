@@ -356,6 +356,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       await tx.wait();
       return true;
     } catch (e) {
+      __log__(e)
       return false;
     }
   }
@@ -380,11 +381,13 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           ),
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
+            gasLimit: 1_000_000,
           }
         );
       await tx.wait();
       return true;
     } catch (e) {
+      __log__(e)
       return false;
     }
   }
@@ -1122,12 +1125,15 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-      __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
+
+      await UnwrapAll();
+
       return true;
     } catch (e) {
+      await UnwrapAll();
       return false;
     }
   }

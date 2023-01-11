@@ -13,7 +13,7 @@ async function main() {
   // 14. Test CreatePoolPositionTicks function
 
   console.log(`Getting pool data for the MATIC/USDC feeTier: 0.05 pool`)
-  result = await lib.GetPoolData(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05)
+  var result = await lib.GetPoolData(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05)
   if (result == false) {
     console.log(`Result: ${result}\n`);
     process.exit(1);
@@ -27,7 +27,7 @@ async function main() {
   console.log(`1 MATIC is ${price} USDC\n`);
 
   console.log(`Getting the nearest "MATIC/USDC feeTier 0.05" tick range from price ${price}`)
-  var result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, price);
+  result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05, price);
   if (result == false) {
     console.log(`Result: ${result}\n`);
     process.exit(1);

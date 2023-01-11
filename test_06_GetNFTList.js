@@ -6,7 +6,8 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true
   );
 
   // 6. Test GetNFTList function
