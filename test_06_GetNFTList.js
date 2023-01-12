@@ -7,14 +7,14 @@ async function main() {
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
     process.env.RPC_URL,
-    true
+    true // debug on
   );
 
   // 6. Test GetNFTList function
 
   const result = await lib.GetNFTList(false);
   console.log(result);
-  console.log("===========");
+  console.log("=========================");
   console.log(`Total: ${result.length}`);
 
   return 0;

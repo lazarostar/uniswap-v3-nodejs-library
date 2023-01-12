@@ -6,12 +6,13 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
   // 8. Test GetUnclaimedFeeAmounts function
 
-  const result = await lib.GetUnclaimedFeeAmounts(613794);
+  const result = await lib.GetUnclaimedFeeAmounts(621842);
   console.log(result);
 
   return 0;

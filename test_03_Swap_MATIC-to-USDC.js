@@ -12,33 +12,45 @@ async function main() {
 
   // 3. Test Swap function
 
-  console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.MATIC);
-  console.log(`Balance: ${balance} MATIC`);
+  console.log("Before:\n");
+  let balance = await lib.GetAmount(lib.Tokens.MATIC);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} MATIC`);
+  }
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC\n`);
+  }
 
-  console.log(`Swapping "1 USDC worth of MATIC" to USDC`)
-  var result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1, true);
+  console.log('Swapping "1 USDC worth of MATIC" to USDC');
+  let result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1, true);
   console.log(`Result: ${result}\n`);
 
-  console.log("After (we should have less MATIC and 1 USDC more in the wallet): \n")
+  console.log("After (we should have less MATIC and 1 USDC more in the wallet): \n");
   balance = await lib.GetAmount(lib.Tokens.MATIC);
-  console.log(`Balance: ${balance} MATIC`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} MATIC`);
+  }
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC\n`);
+  }
 
   // ---
 
-  console.log(`Swapping 1 MATIC to USDC`)
+  console.log("Swapping 1 MATIC to USDC");
   result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.USDC, 1, false);
   console.log(`Result: ${result}\n`);
 
-  console.log("After (we should have 1 MATIC less and more USDC in the wallet) :\n")
+  console.log("After (we should have 1 MATIC less and more USDC in the wallet) :\n");
   balance = await lib.GetAmount(lib.Tokens.MATIC);
-  console.log(`Balance: ${balance} MATIC`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} MATIC`);
+  }
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC\n`);
+  }
 
   return 0;
 }

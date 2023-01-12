@@ -6,31 +6,40 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
   // 15. Test AddLiquidity function
 
-  const poolID = 613718;
+  const poolID = 621842;
 
-  var result = await lib.GetPoolPositionInfo(poolID)
-  console.log(result, `\n`)
+  const pool = await lib.GetPoolPositionInfo(poolID)
+  console.log(pool, `\n`);
 
-  console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
-  balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  console.log("Before:\n");
+  let balance = await lib.GetAmount(lib.Tokens[pool.token0]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token0}`);
+  }
+  balance = await lib.GetAmount(lib.Tokens[pool.token1]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token1}\n`);
+  }
 
-  console.log(`Adding Liquidity to pool #${poolID}`)
-  result = await lib.AddLiquidity(poolID, 1, 0.001)
+  console.log(`Adding Liquidity to pool #${poolID}`);
+  let result = await lib.AddLiquidity(poolID, 1, 0.001)
   console.log(`Result: ${result}\n`);
 
-  console.log("After:\n")
-  balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
-  balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  console.log("After:\n");
+  balance = await lib.GetAmount(lib.Tokens[pool.token0]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token0}`);
+  }
+  balance = await lib.GetAmount(lib.Tokens[pool.token1]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token1}\n`);
+  }
 
   return 0;
 }

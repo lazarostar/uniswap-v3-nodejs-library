@@ -12,7 +12,7 @@ async function main() {
 
   // 19. Test UnwrapAll function
 
-  console.log(`UnwrapAll`);
+  console.log("UnwrapAll");
   const result = await lib.UnwrapAll();
   console.log(`Result: ${result}\n`);
 

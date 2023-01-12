@@ -12,29 +12,30 @@ async function main() {
 
   // 20. Test CreatePoolPositionTicksMax function
 
-  console.log(`Getting the current price of USDC in WETH`)
-  price = await lib.GetCurrentPrice(lib.Tokens.USDC, lib.Tokens.WETH);
+  console.log("Getting the current price of USDC in WETH");
+  let price = await lib.GetCurrentPrice(lib.Tokens.USDC, lib.Tokens.WETH);
   console.log(`1 USDC is ${price} WETH\n`);
+  if (price === false) return 1;
 
-  console.log(`Getting the nearest "USDC/WETH feeTier 0.05" tick range from price ${price}`)
-  var result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.USDC, lib.Tokens.WETH, 0.05, price);
-  if (result !== false) {
-    console.log(`The tick range is: ${result[0]} to ${result[1]}\n`);
-  } else {
-    console.log(`Result: ${result}\n`);
-    process.exit(1);
-  }
+  console.log(`Getting the nearest "USDC/WETH feeTier 0.05" tick range from price ${price}`);
+  let result = await lib.GetNearestTickRangeFromPrice(lib.Tokens.USDC, lib.Tokens.WETH, 0.05, price);
+  if (result === false) return 2;
   const tickLower = result[0];
   const tickUpper = result[1];
+  console.log(`The tick range is: ${tickLower} to ${tickUpper}\n`);
 
-  console.log(`Before:\n`)
-  balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH\n`);
+  console.log("Before:\n");
+  let balance = await lib.GetAmount(lib.Tokens.USDC);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC`);
+  }
+  balance = await lib.GetAmount(lib.Tokens.WETH);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} WETH\n`);
+  }
 
-  console.log(`Creating new pool USDC/WETH feeTier: 0.05, tick range: ${tickLower} - ${tickUpper}, adding all USDC and WETH what we have`)
-  var result = await lib.CreatePoolPositionTicksMax(
+  console.log(`Creating new pool USDC/WETH feeTier: 0.05, tick range: ${tickLower} - ${tickUpper}, adding all USDC and WETH what we have`);
+  result = await lib.CreatePoolPositionTicksMax(
     lib.Tokens.USDC,
     lib.Tokens.WETH,
     0.05,
@@ -43,11 +44,15 @@ async function main() {
   );
   console.log(`Pool id: ${result}\n`);
 
-  console.log("After (we should have 0 USDC and 0 WETH in the wallet because we just added all those to the new pool) :\n")
+  console.log("After (we should have 0 USDC and 0 WETH in the wallet because we just added all those to the new pool) :\n");
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC`);
+  }
+  balance = await lib.GetAmount(lib.Tokens.WETH);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} WETH\n`);
+  }
 
   return 0;
 }

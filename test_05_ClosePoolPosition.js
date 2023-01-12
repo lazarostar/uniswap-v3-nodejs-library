@@ -6,31 +6,40 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
   // 5. Test ClosePoolPosition function
 
-  const poolID = 613794;
+  const poolID = 621970;
 
-  var result = await lib.GetUnclaimedFeeAmounts(poolID);
-  console.log(result);
+  const pool = await lib.GetPoolPositionInfo(poolID)
+  console.log(pool, `\n`);
 
-  console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
-  balance = await lib.GetAmount(lib.Tokens.MATIC);
-  console.log(`Balance: ${balance} MATIC\n`);
+  console.log("Before:\n");
+  let balance = await lib.GetAmount(lib.Tokens[pool.token0]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token0}`);
+  }
+  balance = await lib.GetAmount(lib.Tokens[pool.token1]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token1}\n`);
+  }
 
-  console.log(`Closing pool position`)
-  result = await lib.ClosePoolPosition(poolID);
+  console.log("Closing pool position");
+  let result = await lib.ClosePoolPosition(poolID);
   console.log(`Result: ${result}\n`);
 
-  console.log(`After:\n`)
-  balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC`);
-  balance = await lib.GetAmount(lib.Tokens.MATIC);
-  console.log(`Balance: ${balance} MATIC\n`);
+  console.log("After:\n");
+  balance = await lib.GetAmount(lib.Tokens[pool.token0]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token0}`);
+  }
+  balance = await lib.GetAmount(lib.Tokens[pool.token1]);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} ${pool.token1}\n`);
+  }
 
   return 0;
 }

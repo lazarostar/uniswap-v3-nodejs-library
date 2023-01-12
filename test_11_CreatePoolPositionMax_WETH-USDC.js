@@ -6,32 +6,41 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
   // 11. Test CreatePoolPositionMax function
 
-  console.log(`Before:\n`)
-  var balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  console.log("Before:\n");
+  let balance = await lib.GetAmount(lib.Tokens.WETH);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} WETH`);
+  }
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC\n`);
+  }
 
-  console.log(`Creating new pool WETH/USDC feeTier: 0.05, price range: 1265 - 1275, adding all WETH and USDC what we have`)
-  var result = await lib.CreatePoolPositionMax(
+  console.log("Creating new pool WETH/USDC feeTier: 0.05, price range: 1335 - 1350, adding all WETH and USDC what we have");
+  let result = await lib.CreatePoolPositionMax(
     lib.Tokens.WETH,
     lib.Tokens.USDC,
     0.05,
-    1265,
-    1275
+    1335,
+    1350
   );
   console.log(`Pool id: ${result}\n`);
 
-  console.log("After (we should have 0 WETH and 0 USDC in the wallet because we just added all those to the new pool) :\n")
+  console.log("After (we should have 0 WETH and 0 USDC in the wallet because we just added all those to the new pool) :\n");
   balance = await lib.GetAmount(lib.Tokens.WETH);
-  console.log(`Balance: ${balance} WETH`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} WETH`);
+  }
   balance = await lib.GetAmount(lib.Tokens.USDC);
-  console.log(`Balance: ${balance} USDC\n`);
+  if (balance !== false) {
+    console.log(`Balance: ${balance.value} USDC\n`);
+  }
 
   return 0;
 }

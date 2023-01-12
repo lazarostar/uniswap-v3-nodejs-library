@@ -6,13 +6,14 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
-  // 4. Test GetPoolPositionInfo function
+  // 16. Test GetPoolPositionInfo function
 
-  const result = await lib.GetPoolPositionInfo(618235);
-  console.log(result)
+  const result = await lib.GetPoolPositionInfo(621909);
+  console.log(result);
 
   return 0;
 }

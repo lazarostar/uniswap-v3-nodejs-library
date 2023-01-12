@@ -6,17 +6,26 @@ async function main() {
     process.env.WALLET_ADDRESS,
     process.env.PRIVATE_KEY,
     Networks[process.env.NETWORK],
-    process.env.RPC_URL
+    process.env.RPC_URL,
+    true // debug on
   );
 
   // 10. Test GetCurrentPriceTick function
 
-  console.log(`Getting the current tick value for USDC/WETH`)
-  var currentTick = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.WETH, 0.05);
+  console.log("Getting the current tick value for USDC/WETH");
+  let currentTick = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.WETH, 0.05);
   console.log(`Current tick is ${currentTick}\n`);
 
-  console.log(`Getting the current tick value for WETH/USDC`)
+  console.log("Getting the current tick value for WETH/USDC");
   currentTick = await lib.GetCurrentPriceTick(lib.Tokens.WETH, lib.Tokens.USDC, 0.05);
+  console.log(`Current tick is ${currentTick}\n`);
+
+  console.log("Getting the current tick value for USDC/MATIC");
+  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.USDC, lib.Tokens.MATIC, 0.05);
+  console.log(`Current tick is ${currentTick}\n`);
+
+  console.log("Getting the current tick value for MATIC/USDC");
+  currentTick = await lib.GetCurrentPriceTick(lib.Tokens.MATIC, lib.Tokens.USDC, 0.05);
   console.log(`Current tick is ${currentTick}\n`);
 
   return 0;
