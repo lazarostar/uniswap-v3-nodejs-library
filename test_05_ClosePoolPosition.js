@@ -12,7 +12,7 @@ async function main() {
 
   // 5. Test ClosePoolPosition function
 
-  const poolID = 621970;
+  const poolID = 621947;
 
   const pool = await lib.GetPoolPositionInfo(poolID)
   console.log(pool, `\n`);

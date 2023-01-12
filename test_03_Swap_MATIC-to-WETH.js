@@ -22,27 +22,28 @@ async function main() {
     console.log(`Balance: ${balance.value} WETH\n`);
   }
 
-  console.log('Swapping "0.001 WETH worth of MATIC" to WETH');
-  let result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.WETH, 0.001, true);
-  console.log(`Result: ${result}\n`);
+  // console.log('Swapping "0.001 WETH worth of MATIC" to WETH');
+  // let result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.WETH, 0.001, true);
+  // console.log(`Result: ${result}\n`);
 
-  console.log("After (we should have less MATIC and 0.001 WETH more in the wallet): \n");
-  balance = await lib.GetAmount(lib.Tokens.MATIC);
-  if (balance !== false) {
-    console.log(`Balance: ${balance.value} MATIC`);
-  }
-  balance = await lib.GetAmount(lib.Tokens.WETH);
-  if (balance !== false) {
-    console.log(`Balance: ${balance.value} WETH\n`);
-  }
+  // console.log("After (we should have less MATIC and 0.001 WETH more in the wallet): \n");
+  // balance = await lib.GetAmount(lib.Tokens.MATIC);
+  // if (balance !== false) {
+  //   console.log(`Balance: ${balance.value} MATIC`);
+  // }
+  // balance = await lib.GetAmount(lib.Tokens.WETH);
+  // if (balance !== false) {
+  //   console.log(`Balance: ${balance.value} WETH\n`);
+  // }
 
   // ---
 
-  console.log("Swapping 1 MATIC to WETH");
-  result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.WETH, 1, false);
+  const amountToSwap = 7.1831835;
+  console.log(`Swapping ${amountToSwap} MATIC to WETH`);
+  result = await lib.Swap(lib.Tokens.MATIC, lib.Tokens.WETH, amountToSwap, false);
   console.log(`Result: ${result}\n`);
 
-  console.log("After (we should have 1 MATIC less and more WETH in the wallet) :\n");
+  console.log(`After (we should have ${amountToSwap} MATIC less and more WETH in the wallet) :\n`);
   balance = await lib.GetAmount(lib.Tokens.MATIC);
   if (balance !== false) {
     console.log(`Balance: ${balance.value} MATIC`);

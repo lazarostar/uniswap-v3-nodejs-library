@@ -884,6 +884,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
       }
       token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      __log__(token0Amount);
+      __log__(token0Amount.toExact()); // hetye!!
 
       let token1Amount;
       let token1AmountHuman;
@@ -897,6 +899,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
       }
       token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      __log__(token1Amount);
+      __log__(token1Amount.toExact());
 
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
