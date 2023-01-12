@@ -20,7 +20,6 @@ async function main() {
   console.log("Getting the current price of MATIC in USDC");
   const price = await lib.GetCurrentPrice(lib.Tokens.MATIC, lib.Tokens.USDC);
   if (price === false) return 2;
-
   console.log(`1 MATIC is ${price} USDC\n`);
 
   console.log(`Getting the nearest "MATIC/USDC feeTier 0.05" tick range from price ${price}`);
