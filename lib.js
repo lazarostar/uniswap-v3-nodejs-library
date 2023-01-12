@@ -207,7 +207,7 @@ async function __getPoolState(poolContract) {
   return PoolState;
 }
 
-const __poolCache = [];
+var __poolCache = [];
 const __getPoolPositionInfo = async (
   web3Provider,
   walletAddress,
