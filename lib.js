@@ -441,6 +441,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         value: balance / Math.pow(10, token.decimals),
       };
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -464,6 +465,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
       return Number(route.quote.toFixed(token1.decimals));
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -562,6 +564,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       await tx.wait();
       return true;
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -588,6 +591,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1 = token1.wrapped;
       }
     } catch (e) {
+      __log__(e);
       return false;
     }
 
@@ -819,18 +823,21 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         };
 
         const signedTx = await wallet.signTransaction(multicallTx);
-
         const tx = await web3Provider.sendTransaction(signedTx);
         __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
-
-        const tokenId = __getTokenIdFromTransactionLogs(result.logs);
         await UnwrapAll();
+        if (result.status !== 1) { // The transaction failed:
+          __log__(`Transaction result:`);
+          __log__(result);
+          return false;
+        }
+        const tokenId = __getTokenIdFromTransactionLogs(result.logs);
         return tokenId;
       }
       return false;
     } catch (e) {
-      __log__(e.message);
+      __log__(e);
       await UnwrapAll();
       return false;
     }
@@ -886,6 +893,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1 = token1.wrapped;
       }
     } catch (e) {
+      __log__(e);
       return false;
     }
 
@@ -1101,18 +1109,21 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         };
 
         const signedTx = await wallet.signTransaction(multicallTx);
-
         const tx = await web3Provider.sendTransaction(signedTx);
         __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
-
-        const tokenId = __getTokenIdFromTransactionLogs(result.logs);
         await UnwrapAll();
+        if (result.status !== 1) { // The transaction failed:
+          __log__(`Transaction result:`);
+          __log__(result);
+          return false;
+        }
+        const tokenId = __getTokenIdFromTransactionLogs(result.logs);
         return tokenId;
       }
       return false;
     } catch (e) {
-      __log__(e.message);
+      __log__(e);
       await UnwrapAll();
       return false;
     }
@@ -1237,6 +1248,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return true;
     } catch (e) {
+      __log__(e);
       await UnwrapAll();
       return false;
     }
@@ -1443,6 +1455,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1530,6 +1543,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1565,6 +1579,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return result;
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1599,6 +1614,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return immutables.token0 === token0.address ? state.tick : -state.tick;
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1928,7 +1944,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       }
       return false;
     } catch (e) {
-      __log__(e.message);
+      __log__(e);
       return false;
     }
   }
@@ -1960,6 +1976,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
       return result;
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -2023,6 +2040,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ),
       };
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -2047,6 +2065,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1 = token1.wrapped;
       }
     } catch (e) {
+      __log__(e);
       return false;
     }
 
@@ -2087,6 +2106,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1: token1.symbol,
       };
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
