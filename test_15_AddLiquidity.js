@@ -12,7 +12,7 @@ async function main() {
 
   // 15. Test AddLiquidity function
 
-  const poolID = 622503;
+  const poolID = 623289;
 
   const pool = await lib.GetPoolPositionInfo(poolID)
   console.log(pool, `\n`);

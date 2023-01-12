@@ -10,9 +10,9 @@ async function main() {
     true // debug on
   );
 
-  // 7. Test CollectUnclaimedFees function
+  // 15. Test AddLiquidity function
 
-  const poolID = 623334;
+  const poolID = 623289;
 
   const pool = await lib.GetPoolPositionInfo(poolID)
   console.log(pool, `\n`);
@@ -27,12 +27,11 @@ async function main() {
     console.log(`Balance: ${balance.value} ${pool.token1}\n`);
   }
 
-  console.log(`Collecting unclaimed fees from pool#${poolID}`);
-  let result = await lib.CollectUnclaimedFees(poolID)
-  console.log("Result:");
-  console.log(result, "\n");
+  console.log(`Adding Liquidity to pool #${poolID}`);
+  let result = await lib.AddLiquidityMax(poolID)
+  console.log(`Result: ${result}\n`);
 
-  console.log("After:\n");
+  console.log(`After (we should have 0 ${pool.token0} and 0 ${pool.token1} in the wallet because we just added all those to the existing pool) :\n`);
   balance = await lib.GetAmount(lib.Tokens[pool.token0]);
   if (balance !== false) {
     console.log(`Balance: ${balance.value} ${pool.token0}`);
