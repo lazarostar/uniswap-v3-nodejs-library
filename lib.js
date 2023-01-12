@@ -349,8 +349,10 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       if (amount instanceof ethers.BigNumber) {
         humanAmount = amount / Math.pow(10, nativeToken.decimals);
       } else {
-        if (typeof amount !== 'number') return false;
-        bignumAmount = ethers.BigNumber.from("" + Math.floor(amount * Math.pow(10, nativeToken.decimals)));
+        if (typeof amount !== "number") return false;
+        bignumAmount = ethers.BigNumber.from(
+          "" + Math.floor(amount * Math.pow(10, nativeToken.decimals))
+        );
       }
 
       __log__("Getting the actual feeData ...");
@@ -363,7 +365,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       await tx.wait();
       return true;
     } catch (e) {
-      __log__(e)
+      __log__(e);
       return false;
     }
   }
@@ -383,23 +385,24 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       if (amount instanceof ethers.BigNumber) {
         humanAmount = amount / Math.pow(10, nativeToken.decimals);
       } else {
-        if (typeof amount !== 'number') return false;
-        bignumAmount = ethers.BigNumber.from("" + Math.floor(amount * Math.pow(10, nativeToken.decimals)));
+        if (typeof amount !== "number") return false;
+        bignumAmount = ethers.BigNumber.from(
+          "" + Math.floor(amount * Math.pow(10, nativeToken.decimals))
+        );
       }
 
       __log__(`Getting the actual feeData ...`);
       const feeData = await web3Provider.getFeeData();
       __log__(`Unwrapping ${humanAmount} ${wrappedToken.symbol} ...`);
-      const tx = await contract.connect(connectedWallet).withdraw(
-          bignumAmount,
-          {
-            gasPrice: feeData.gasPrice.mul(110).div(100),
-          }
-        );
+      const tx = await contract
+        .connect(connectedWallet)
+        .withdraw(bignumAmount, {
+          gasPrice: feeData.gasPrice.mul(110).div(100),
+        });
       await tx.wait();
       return true;
     } catch (e) {
-      __log__(e)
+      __log__(e);
       return false;
     }
   }
@@ -423,8 +426,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         return {
           bignum: balance,
           decimals: token.decimals,
-          value: balance / Math.pow(10, token.decimals)
-        }
+          value: balance / Math.pow(10, token.decimals),
+        };
       }
       const contract = new ethers.Contract(
         token.address,
@@ -435,8 +438,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       return {
         bignum: balance,
         decimals: token.decimals,
-        value: balance / Math.pow(10, token.decimals)
-      }
+        value: balance / Math.pow(10, token.decimals),
+      };
     } catch (e) {
       return false;
     }
@@ -479,11 +482,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         tokenAmountHuman = amount / Math.pow(10, token.decimals);
         tokenBigNum = amount;
       } else {
-        if (typeof amount !== 'number') return false;
+        if (typeof amount !== "number") return false;
         tokenAmountHuman = amount;
-        tokenBigNum = ethers.BigNumber.from('' + Math.floor(tokenAmountHuman * Math.pow(10, token.decimals)));
+        tokenBigNum = ethers.BigNumber.from(
+          "" + Math.floor(tokenAmountHuman * Math.pow(10, token.decimals))
+        );
       }
-      tokenAmount = CurrencyAmount.fromRawAmount(token, Math.floor(tokenAmountHuman * Math.pow(10, token.decimals)));
+      tokenAmount = CurrencyAmount.fromRawAmount(
+        token,
+        Math.floor(tokenAmountHuman * Math.pow(10, token.decimals))
+      );
 
       __log__("Routing...");
       const route = await router.route(
@@ -517,9 +525,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           ethers.BigNumber.from(allowance).gt(
             ethers.BigNumber.from(quoteAmountString)
           ) &&
-          ethers.BigNumber.from(allowance).gt(
-            tokenBigNum
-          )
+          ethers.BigNumber.from(allowance).gt(tokenBigNum)
         ) {
           __log__("No need to approve.");
         } else {
@@ -544,7 +550,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         from: walletAddress,
         value: ethers.BigNumber.from(route.methodParameters.value),
         gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
-        gasLimit: ethers.BigNumber.from(route.estimatedGasUsed).mul(300).div(100),
+        gasLimit: ethers.BigNumber.from(route.estimatedGasUsed)
+          .mul(300)
+          .div(100),
         chainId: network,
       };
 
@@ -591,11 +599,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
         token0BigNum = amount0;
       } else {
-        if (typeof amount0 !== 'number') return false;
+        if (typeof amount0 !== "number") return false;
         token0AmountHuman = amount0;
-        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+        token0BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+        );
       }
-      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      token0Amount = CurrencyAmount.fromRawAmount(
+        token0,
+        Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+      );
 
       let token1Amount;
       let token1AmountHuman;
@@ -604,11 +617,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
         token1BigNum = amount1;
       } else {
-        if (typeof amount1 !== 'number') return false;
+        if (typeof amount1 !== "number") return false;
         token1AmountHuman = amount1;
-        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+        token1BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+        );
       }
-      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      token1Amount = CurrencyAmount.fromRawAmount(
+        token1,
+        Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+      );
 
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
@@ -645,7 +663,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0Amount,
         token1Amount,
         token0BigNum,
-        token1BigNum
+        token1BigNum,
       ] =
         token0.address === immutables.token0
           ? [
@@ -658,7 +676,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               token0Amount,
               token1Amount,
               token0BigNum,
-              token1BigNum
+              token1BigNum,
             ]
           : [
               token1,
@@ -670,7 +688,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               token1Amount,
               token0Amount,
               token1BigNum,
-              token0BigNum
+              token0BigNum,
             ];
 
       const pool = new Pool(
@@ -745,7 +763,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
+        if (ethers.BigNumber.from(token0Allowance).gt(token0BigNum)) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
           __log__("Getting the actual feeData ...");
@@ -768,7 +786,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
+        if (ethers.BigNumber.from(token1Allowance).gt(token1BigNum)) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
           if (feeData === false) {
@@ -879,11 +897,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
         token0BigNum = amount0;
       } else {
-        if (typeof amount0 !== 'number') return false;
+        if (typeof amount0 !== "number") return false;
         token0AmountHuman = amount0;
-        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+        token0BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+        );
       }
-      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      token0Amount = CurrencyAmount.fromRawAmount(
+        token0,
+        Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+      );
       __log__(token0Amount);
       __log__(token0Amount.toExact());
 
@@ -894,11 +917,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
         token1BigNum = amount1;
       } else {
-        if (typeof amount1 !== 'number') return false;
+        if (typeof amount1 !== "number") return false;
         token1AmountHuman = amount1;
-        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+        token1BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+        );
       }
-      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      token1Amount = CurrencyAmount.fromRawAmount(
+        token1,
+        Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+      );
       __log__(token1Amount);
       __log__(token1Amount.toExact());
 
@@ -937,7 +965,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0Amount,
         token1Amount,
         token0BigNum,
-        token1BigNum
+        token1BigNum,
       ] =
         token0.address === immutables.token0
           ? [
@@ -950,7 +978,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               token0Amount,
               token1Amount,
               token0BigNum,
-              token1BigNum
+              token1BigNum,
             ]
           : [
               token1,
@@ -962,7 +990,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               token1Amount,
               token0Amount,
               token1BigNum,
-              token0BigNum
+              token0BigNum,
             ];
 
       const pool = new Pool(
@@ -1017,7 +1045,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
+        if (ethers.BigNumber.from(token0Allowance).gt(token0BigNum)) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
           __log__("Getting the actual feeData ...");
@@ -1040,7 +1068,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
+        if (ethers.BigNumber.from(token1Allowance).gt(token1BigNum)) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
           if (feeData === false) {
@@ -1244,6 +1272,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         );
       }
       const positionInfoList = await Promise.all(positionPromiseList);
+      __poolCache = [];
       const positionList = await Promise.all(
         positionInfoList.map(async (position, i) => {
           const token0 = __getTokenByAddress(position.token0, network);
@@ -1268,8 +1297,14 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
             maxTick: Number(position.tickUpper),
             isActivePosition: isActive,
             isInRange: tick >= position.tickLower && tick <= position.tickUpper,
-            token0: token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol,
-            token1: token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol,
+            token0:
+              token0.address === wrappedToken.address
+                ? nativeToken.symbol
+                : token0.symbol,
+            token1:
+              token1.address === wrappedToken.address
+                ? nativeToken.symbol
+                : token1.symbol,
             feeTier: position.fee / 10000,
             liquidityToken0: Number(amount0),
             liquidityToken1: Number(amount1),
@@ -1400,8 +1435,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const wrappedToken = nativeToken.wrapped;
 
       return {
-        [token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol]: Number(unclaimedFee0),
-        [token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol]: Number(unclaimedFee1),
+        [token0.address === wrappedToken.address
+          ? nativeToken.symbol
+          : token0.symbol]: Number(unclaimedFee0),
+        [token1.address === wrappedToken.address
+          ? nativeToken.symbol
+          : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
       return false;
@@ -1483,8 +1522,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const wrappedToken = nativeToken.wrapped;
 
       return {
-        [token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol]: Number(unclaimedFee0),
-        [token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol]: Number(unclaimedFee1),
+        [token0.address === wrappedToken.address
+          ? nativeToken.symbol
+          : token0.symbol]: Number(unclaimedFee0),
+        [token1.address === wrappedToken.address
+          ? nativeToken.symbol
+          : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
       return false;
@@ -1624,7 +1667,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      return (inputToken0.address === token0.address) ? [tickLower, tickUpper] : [-tickUpper, -tickLower];
+      return inputToken0.address === token0.address
+        ? [tickLower, tickUpper]
+        : [-tickUpper, -tickLower];
     } catch (e) {
       __log__(e);
       return false;
@@ -1685,7 +1730,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      return (inputToken0.address === token0.address) ? [tickLower, tickUpper] : [-tickUpper, -tickLower];
+      return inputToken0.address === token0.address
+        ? [tickLower, tickUpper]
+        : [-tickUpper, -tickLower];
     } catch (e) {
       __log__(e);
       return false;
@@ -1717,11 +1764,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
         token0BigNum = amount0;
       } else {
-        if (typeof amount0 !== 'number') return false;
+        if (typeof amount0 !== "number") return false;
         token0AmountHuman = amount0;
-        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+        token0BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+        );
       }
-      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      token0Amount = CurrencyAmount.fromRawAmount(
+        token0,
+        Math.floor(token0AmountHuman * Math.pow(10, token0.decimals))
+      );
 
       let token1Amount;
       let token1AmountHuman;
@@ -1730,11 +1782,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
         token1BigNum = amount1;
       } else {
-        if (typeof amount1 !== 'number') return false;
+        if (typeof amount1 !== "number") return false;
         token1AmountHuman = amount1;
-        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+        token1BigNum = ethers.BigNumber.from(
+          "" + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+        );
       }
-      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      token1Amount = CurrencyAmount.fromRawAmount(
+        token1,
+        Math.floor(token1AmountHuman * Math.pow(10, token1.decimals))
+      );
 
       __log__(`Token0: ${token0.symbol}, Token1: ${token1.symbol}`);
 
@@ -1807,7 +1864,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
+        if (ethers.BigNumber.from(token0Allowance).gt(token0BigNum)) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
           __log__("Getting the actual feeData ...");
@@ -1830,7 +1887,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
+        if (ethers.BigNumber.from(token1Allowance).gt(token1BigNum)) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
           if (feeData === false) {
@@ -1896,7 +1953,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       let token1Balance = await GetAmount(token1);
       if (token1Balance === false) return false;
 
-      const result = await AddLiquidity(tokenId, token0Balance.bignum, token1Balance.bignum);
+      const result = await AddLiquidity(
+        tokenId,
+        token0Balance.bignum,
+        token1Balance.bignum
+      );
       return result;
     } catch (e) {
       return false;
@@ -1918,6 +1979,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const token0 = __getTokenByAddress(position.token0, network);
       const token1 = __getTokenByAddress(position.token1, network);
       const isActive = Number(position.liquidity) === 0 ? false : true;
+      __poolCache = [];
       const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
         await __getPoolPositionInfo(
           web3Provider,
@@ -1937,8 +1999,14 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         maxTick: Number(position.tickUpper),
         isActivePosition: isActive,
         isInRange: tick >= position.tickLower && tick <= position.tickUpper,
-        token0: token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol,
-        token1: token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol,
+        token0:
+          token0.address === wrappedToken.address
+            ? nativeToken.symbol
+            : token0.symbol,
+        token1:
+          token1.address === wrappedToken.address
+            ? nativeToken.symbol
+            : token1.symbol,
         feeTier: position.fee / 10000,
         liquidityToken0: Number(amount0),
         liquidityToken1: Number(amount1),
