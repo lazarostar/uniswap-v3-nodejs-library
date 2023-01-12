@@ -344,14 +344,21 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         web3Provider
       );
 
+      var bignumAmount = amount;
+      var humanAmount = amount;
+      if (amount instanceof ethers.BigNumber) {
+        humanAmount = amount / Math.pow(10, nativeToken.decimals);
+      } else {
+        if (typeof amount !== 'number') return false;
+        bignumAmount = ethers.BigNumber.from("" + Math.floor(amount * Math.pow(10, nativeToken.decimals)));
+      }
+
+      __log__("Getting the actual feeData ...");
       const feeData = await web3Provider.getFeeData();
-      __log__(`Wrapping ${amount} ${nativeToken.symbol} ...`);
+      __log__(`Wrapping ${humanAmount} ${nativeToken.symbol} ...`);
       const tx = await contract.connect(connectedWallet).deposit({
-        value: ethers.BigNumber.from(
-          "" + Math.floor(amount * Math.pow(10, nativeToken.decimals))
-        ),
+        value: bignumAmount,
         gasPrice: feeData.gasPrice.mul(110).div(100),
-        gasLimit: 1_000_000,
       });
       await tx.wait();
       return true;
@@ -371,17 +378,22 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         web3Provider
       );
 
+      var bignumAmount = amount;
+      var humanAmount = amount;
+      if (amount instanceof ethers.BigNumber) {
+        humanAmount = amount / Math.pow(10, nativeToken.decimals);
+      } else {
+        if (typeof amount !== 'number') return false;
+        bignumAmount = ethers.BigNumber.from("" + Math.floor(amount * Math.pow(10, nativeToken.decimals)));
+      }
+
+      __log__(`Getting the actual feeData ...`);
       const feeData = await web3Provider.getFeeData();
-      __log__(`Unwrapping ${amount} ${wrappedToken.symbol} ...`);
-      const tx = await contract
-        .connect(connectedWallet)
-        .withdraw(
-          ethers.BigNumber.from(
-            "" + Math.floor(amount * Math.pow(10, nativeToken.decimals))
-          ),
+      __log__(`Unwrapping ${humanAmount} ${wrappedToken.symbol} ...`);
+      const tx = await contract.connect(connectedWallet).withdraw(
+          bignumAmount,
           {
             gasPrice: feeData.gasPrice.mul(110).div(100),
-            gasLimit: 1_000_000,
           }
         );
       await tx.wait();
@@ -396,9 +408,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     const nativeToken = nativeOnChain(network);
     const wrappedToken = nativeToken.wrapped;
     const balance = await GetAmount(wrappedToken);
-    __log__(`Wrapped balance is ${balance}`);
-    if (balance <= 0) return false;
-    const result = await Unwrap(balance);
+    if (balance === false) return false;
+    __log__(`Wrapped balance is ${balance.value}`);
+    if (balance.value < 0) return false; // the balance cannot be negative
+    if (balance.value <= 0.000000000000001) return true; // the wrapped balance is too small, no need to unwrap that
+    const result = await Unwrap(balance.bignum);
     return result;
   }
 
@@ -406,7 +420,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     try {
       if (token.isNative) {
         const balance = await web3Provider.getBalance(walletAddress);
-        return balance / Math.pow(10, token.decimals);
+        return {
+          bignum: balance,
+          decimals: token.decimals,
+          value: balance / Math.pow(10, token.decimals)
+        }
       }
       const contract = new ethers.Contract(
         token.address,
@@ -414,7 +432,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         web3Provider
       );
       const balance = await contract.balanceOf(walletAddress);
-      return balance / Math.pow(10, token.decimals);
+      return {
+        bignum: balance,
+        decimals: token.decimals,
+        value: balance / Math.pow(10, token.decimals)
+      }
     } catch (e) {
       return false;
     }
@@ -449,11 +471,19 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const [token, quoteToken] = isOutput
         ? [token1, token0]
         : [token0, token1];
-      const amountString = "" + amount * Math.pow(10, token.decimals);
-      const tokenAmount = CurrencyAmount.fromRawAmount(
-        token,
-        JSBI.BigInt(amountString)
-      );
+
+      let tokenAmount;
+      let tokenAmountHuman;
+      let tokenBigNum;
+      if (amount instanceof ethers.BigNumber) {
+        tokenAmountHuman = amount / Math.pow(10, token.decimals);
+        tokenBigNum = amount;
+      } else {
+        if (typeof amount !== 'number') return false;
+        tokenAmountHuman = amount;
+        tokenBigNum = ethers.BigNumber.from('' + Math.floor(tokenAmountHuman * Math.pow(10, token.decimals)));
+      }
+      tokenAmount = CurrencyAmount.fromRawAmount(token, Math.floor(tokenAmountHuman * Math.pow(10, token.decimals)));
 
       __log__("Routing...");
       const route = await router.route(
@@ -488,7 +518,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
             ethers.BigNumber.from(quoteAmountString)
           ) &&
           ethers.BigNumber.from(allowance).gt(
-            ethers.BigNumber.from(amountString)
+            tokenBigNum
           )
         ) {
           __log__("No need to approve.");
@@ -514,9 +544,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         from: walletAddress,
         value: ethers.BigNumber.from(route.methodParameters.value),
         gasPrice: ethers.BigNumber.from(route.gasPriceWei).mul(110).div(100),
-        gasLimit: ethers.BigNumber.from(route.estimatedGasUsed)
-          .mul(300)
-          .div(100),
+        gasLimit: ethers.BigNumber.from(route.estimatedGasUsed).mul(300).div(100),
         chainId: network,
       };
 
@@ -556,14 +584,31 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     }
 
     try {
-      let token0Amount = CurrencyAmount.fromRawAmount(
-        token0,
-        Math.floor(amount0 * Math.pow(10, token0.decimals))
-      );
-      let token1Amount = CurrencyAmount.fromRawAmount(
-        token1,
-        Math.floor(amount1 * Math.pow(10, token1.decimals))
-      );
+      let token0Amount;
+      let token0AmountHuman;
+      let token0BigNum;
+      if (amount0 instanceof ethers.BigNumber) {
+        token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
+        token0BigNum = amount0;
+      } else {
+        if (typeof amount0 !== 'number') return false;
+        token0AmountHuman = amount0;
+        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      }
+      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+
+      let token1Amount;
+      let token1AmountHuman;
+      let token1BigNum;
+      if (amount1 instanceof ethers.BigNumber) {
+        token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
+        token1BigNum = amount1;
+      } else {
+        if (typeof amount1 !== 'number') return false;
+        token1AmountHuman = amount1;
+        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      }
+      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
 
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
@@ -599,6 +644,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         amount1,
         token0Amount,
         token1Amount,
+        token0BigNum,
+        token1BigNum
       ] =
         token0.address === immutables.token0
           ? [
@@ -610,6 +657,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               amount1,
               token0Amount,
               token1Amount,
+              token0BigNum,
+              token1BigNum
             ]
           : [
               token1,
@@ -620,6 +669,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               amount0,
               token1Amount,
               token0Amount,
+              token1BigNum,
+              token0BigNum
             ];
 
       const pool = new Pool(
@@ -683,7 +734,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
 
       if (routeToRatioResponse.status == SwapToRatioStatus.SUCCESS) {
-        const feeData = await web3Provider.getFeeData();
+        let feeData = false;
 
         const token0Contract = new ethers.Contract(
           token0.address,
@@ -694,15 +745,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token0Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount0 * Math.pow(10, token0.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
+          __log__("Getting the actual feeData ...");
+          feeData = await web3Provider.getFeeData();
           __log__(`Approving ${token0.symbol} ...`);
           let approvalTx = await token0Contract
             .connect(connectedWallet)
@@ -721,15 +768,13 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token1Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount1 * Math.pow(10, token1.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
+          if (feeData === false) {
+            __log__("Getting the actual feeData ...");
+            feeData = await web3Provider.getFeeData();
+          }
           __log__(`Approving ${token1.symbol} ...`);
           approvalTx = await token1Contract
             .connect(connectedWallet)
@@ -781,7 +826,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     maxPrice
   ) {
     let token0Balance = await GetAmount(token0);
+    if (token0Balance === false) return false;
+
+    // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
+
     let token1Balance = await GetAmount(token1);
+    if (token1Balance === false) return false;
 
     const result = await CreatePoolPosition(
       token0,
@@ -789,8 +839,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       feeTier,
       minPrice,
       maxPrice,
-      token0Balance,
-      token1Balance
+      token0Balance.bignum,
+      token1Balance.bignum
     );
 
     return result;
@@ -822,14 +872,31 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     }
 
     try {
-      let token0Amount = CurrencyAmount.fromRawAmount(
-        token0,
-        Math.floor(amount0 * Math.pow(10, token0.decimals))
-      );
-      let token1Amount = CurrencyAmount.fromRawAmount(
-        token1,
-        Math.floor(amount1 * Math.pow(10, token1.decimals))
-      );
+      let token0Amount;
+      let token0AmountHuman;
+      let token0BigNum;
+      if (amount0 instanceof ethers.BigNumber) {
+        token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
+        token0BigNum = amount0;
+      } else {
+        if (typeof amount0 !== 'number') return false;
+        token0AmountHuman = amount0;
+        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      }
+      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+
+      let token1Amount;
+      let token1AmountHuman;
+      let token1BigNum;
+      if (amount1 instanceof ethers.BigNumber) {
+        token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
+        token1BigNum = amount1;
+      } else {
+        if (typeof amount1 !== 'number') return false;
+        token1AmountHuman = amount1;
+        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      }
+      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
 
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
@@ -865,6 +932,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         amount1,
         token0Amount,
         token1Amount,
+        token0BigNum,
+        token1BigNum
       ] =
         token0.address === immutables.token0
           ? [
@@ -876,6 +945,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               amount1,
               token0Amount,
               token1Amount,
+              token0BigNum,
+              token1BigNum
             ]
           : [
               token1,
@@ -886,6 +957,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
               amount0,
               token1Amount,
               token0Amount,
+              token1BigNum,
+              token0BigNum
             ];
 
       const pool = new Pool(
@@ -929,7 +1002,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
 
       if (routeToRatioResponse.status == SwapToRatioStatus.SUCCESS) {
-        const feeData = await web3Provider.getFeeData();
+        let feeData = false;
 
         const token0Contract = new ethers.Contract(
           token0.address,
@@ -940,15 +1013,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token0Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount0 * Math.pow(10, token0.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
+          __log__("Getting the actual feeData ...");
+          feeData = await web3Provider.getFeeData();
           __log__(`Approving ${token0.symbol} ...`);
           let approvalTx = await token0Contract
             .connect(connectedWallet)
@@ -967,15 +1036,13 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token1Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount1 * Math.pow(10, token1.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
+          if (feeData === false) {
+            __log__("Getting the actual feeData ...");
+            feeData = await web3Provider.getFeeData();
+          }
           __log__(`Approving ${token1.symbol} ...`);
           approvalTx = await token1Contract
             .connect(connectedWallet)
@@ -1027,7 +1094,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     maxTick
   ) {
     let token0Balance = await GetAmount(token0);
+    if (token0Balance === false) return false;
+
+    // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
+
     let token1Balance = await GetAmount(token1);
+    if (token1Balance === false) return false;
 
     const result = await CreatePoolPositionTicks(
       token0,
@@ -1035,8 +1107,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       feeTier,
       minTick,
       maxTick,
-      token0Balance,
-      token1Balance
+      token0Balance.bignum,
+      token1Balance.bignum
     );
 
     return result;
@@ -1119,7 +1191,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         to: V3_POSITION_NFT_ADDRESS,
         from: walletAddress,
         value: ethers.BigNumber.from(value),
-        gasPrice: feeData.gasPrice.mul(110).div(100),
+        gasPrice: feeData.gasPrice.mul(125).div(100),
         gasLimit: 1_000_000,
         chainId: network,
       };
@@ -1140,6 +1212,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
   async function GetNFTList(hideClosedPositions = true) {
     try {
+      const nativeToken = nativeOnChain(network);
+      const wrappedToken = nativeToken.wrapped;
+
       const positionManagerContract = new ethers.Contract(
         V3_POSITION_NFT_ADDRESS,
         INonfungiblePositionManagerABI,
@@ -1189,8 +1264,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
             maxTick: Number(position.tickUpper),
             isActivePosition: isActive,
             isInRange: tick >= position.tickLower && tick <= position.tickUpper,
-            token0: token0.symbol,
-            token1: token1.symbol,
+            token0: token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol,
+            token1: token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol,
             feeTier: position.fee / 10000,
             liquidityToken0: Number(amount0),
             liquidityToken1: Number(amount1),
@@ -1212,6 +1287,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ? positionList.filter((position) => position.isActivePosition)
         : positionList;
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1477,7 +1553,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     if (token0.isNative) token0 = token0.wrapped;
     if (token1.isNative) token1 = token1.wrapped;
 
-    const [inputToken0, inputToken1] = [token0, token1];
+    const inputToken0 = token0;
 
     feeTier *= 10_000;
 
@@ -1537,9 +1613,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      if (inputToken0.address === token0.address) return [tickLower, tickUpper];
-      return [-tickUpper, -tickLower];
+      return (inputToken0.address === token0.address) ? [tickLower, tickUpper] : [-tickUpper, -tickLower];
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1547,6 +1623,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
   async function GetNearestTickRangeFromTick(token0, token1, feeTier, tick) {
     if (token0.isNative) token0 = token0.wrapped;
     if (token1.isNative) token1 = token1.wrapped;
+
+    const inputToken0 = token0;
 
     feeTier *= 10_000;
 
@@ -1596,9 +1674,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ];
       }
 
-      if (inputToken0.address === token0.address) return [tickLower, tickUpper];
-      return [-tickUpper, -tickLower];
+      return (inputToken0.address === token0.address) ? [tickLower, tickUpper] : [-tickUpper, -tickLower];
     } catch (e) {
+      __log__(e);
       return false;
     }
   }
@@ -1621,14 +1699,31 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      let token0Amount = CurrencyAmount.fromRawAmount(
-        token0,
-        Math.floor(amount0 * Math.pow(10, token0.decimals))
-      );
-      let token1Amount = CurrencyAmount.fromRawAmount(
-        token1,
-        Math.floor(amount1 * Math.pow(10, token1.decimals))
-      );
+      let token0Amount;
+      let token0AmountHuman;
+      let token0BigNum;
+      if (amount0 instanceof ethers.BigNumber) {
+        token0AmountHuman = amount0 / Math.pow(10, token0.decimals);
+        token0BigNum = amount0;
+      } else {
+        if (typeof amount0 !== 'number') return false;
+        token0AmountHuman = amount0;
+        token0BigNum = ethers.BigNumber.from('' + Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+      }
+      token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
+
+      let token1Amount;
+      let token1AmountHuman;
+      let token1BigNum;
+      if (amount1 instanceof ethers.BigNumber) {
+        token1AmountHuman = amount1 / Math.pow(10, token1.decimals);
+        token1BigNum = amount1;
+      } else {
+        if (typeof amount1 !== 'number') return false;
+        token1AmountHuman = amount1;
+        token1BigNum = ethers.BigNumber.from('' + Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
+      }
+      token1Amount = CurrencyAmount.fromRawAmount(token1, Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)));
 
       __log__(`Token0: ${token0.symbol}, Token1: ${token1.symbol}`);
 
@@ -1664,8 +1759,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         pool,
         tickLower: positionInfo.tickLower,
         tickUpper: positionInfo.tickUpper,
-        amount0: Math.floor(amount0 * Math.pow(10, token0.decimals)),
-        amount1: Math.floor(amount1 * Math.pow(10, token1.decimals)),
+        amount0: Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)),
+        amount1: Math.floor(token1AmountHuman * Math.pow(10, token1.decimals)),
       });
 
       __log__("Routing ...");
@@ -1690,7 +1785,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
 
       if (routeToRatioResponse.status == SwapToRatioStatus.SUCCESS) {
-        const feeData = await web3Provider.getFeeData();
+        let feeData = false;
 
         const token0Contract = new ethers.Contract(
           token0.address,
@@ -1701,15 +1796,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token0Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount0 * Math.pow(10, token0.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token0Allowance).gt(token0BigNum) ) {
           __log__(`No need to approve ${token0.symbol}`);
         } else {
+          __log__("Getting the actual feeData ...");
+          feeData = await web3Provider.getFeeData();
           __log__(`Approving ${token0.symbol} ...`);
           let approvalTx = await token0Contract
             .connect(connectedWallet)
@@ -1728,15 +1819,13 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           walletAddress,
           V3_SWAP_ROUTER_ADDRESS
         );
-        if (
-          ethers.BigNumber.from(token1Allowance).gt(
-            ethers.BigNumber.from(
-              "" + Math.floor(amount1 * Math.pow(10, token1.decimals))
-            )
-          )
-        ) {
+        if ( ethers.BigNumber.from(token1Allowance).gt(token1BigNum) ) {
           __log__(`No need to approve ${token1.symbol}`);
         } else {
+          if (feeData === false) {
+            __log__("Getting the actual feeData ...");
+            feeData = await web3Provider.getFeeData();
+          }
           __log__(`Approving ${token1.symbol} ...`);
           approvalTx = await token1Contract
             .connect(connectedWallet)
@@ -1789,9 +1878,14 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
       let token0Balance = await GetAmount(token0);
-      let token1Balance = await GetAmount(token1);
+      if (token0Balance === false) return false;
 
-      const result = await AddLiquidity(tokenId, token0Balance, token1Balance);
+      // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
+
+      let token1Balance = await GetAmount(token1);
+      if (token1Balance === false) return false;
+
+      const result = await AddLiquidity(tokenId, token0Balance.bignum, token1Balance.bignum);
       return result;
     } catch (e) {
       return false;
@@ -1805,6 +1899,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         INonfungiblePositionManagerABI,
         web3Provider
       );
+
+      const nativeToken = nativeOnChain(network);
+      const wrappedToken = nativeToken.wrapped;
 
       const position = await positionManagerContract.positions(tokenId);
       const token0 = __getTokenByAddress(position.token0, network);
@@ -1829,8 +1926,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         maxTick: Number(position.tickUpper),
         isActivePosition: isActive,
         isInRange: tick >= position.tickLower && tick <= position.tickUpper,
-        token0: token0.symbol,
-        token1: token1.symbol,
+        token0: token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol,
+        token1: token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol,
         feeTier: position.fee / 10000,
         liquidityToken0: Number(amount0),
         liquidityToken1: Number(amount1),
@@ -1853,7 +1950,11 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
   async function SwapAll(token0, token1) {
     const token0Amount = await GetAmount(token0);
-    const result = await Swap(token0, token1, token0Amount);
+    if (token0Amount === false) return false;
+
+    // TODO: If token0 is the native token then do NOT swap all of it, we must leave a little for the gas fee!
+
+    const result = await Swap(token0, token1, token0Amount.bignum);
     return result;
   }
 
