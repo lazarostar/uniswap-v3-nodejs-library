@@ -885,7 +885,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       }
       token0Amount = CurrencyAmount.fromRawAmount(token0, Math.floor(token0AmountHuman * Math.pow(10, token0.decimals)));
       __log__(token0Amount);
-      __log__(token0Amount.toExact()); // hetye!!
+      __log__(token0Amount.toExact());
 
       let token1Amount;
       let token1AmountHuman;
@@ -1395,9 +1395,13 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       const tx = await web3Provider.sendTransaction(signedTx);
       await tx.wait();
+
+      const nativeToken = nativeOnChain(network);
+      const wrappedToken = nativeToken.wrapped;
+
       return {
-        [token0.symbol]: Number(unclaimedFee0),
-        [token1.symbol]: Number(unclaimedFee1),
+        [token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol]: Number(unclaimedFee0),
+        [token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
       return false;
@@ -1475,9 +1479,12 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         parseFloat(collectResults.amount1) / Math.pow(10, token1.decimals)
       ).toPrecision(4);
 
+      const nativeToken = nativeOnChain(network);
+      const wrappedToken = nativeToken.wrapped;
+
       return {
-        [token0.symbol]: Number(unclaimedFee0),
-        [token1.symbol]: Number(unclaimedFee1),
+        [token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol]: Number(unclaimedFee0),
+        [token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
       return false;

@@ -12,7 +12,7 @@ async function main() {
 
   // 7. Test CollectUnclaimedFees function
 
-  const poolID = 621842;
+  const poolID = 622503;
 
   const pool = await lib.GetPoolPositionInfo(poolID)
   console.log(pool, `\n`);
