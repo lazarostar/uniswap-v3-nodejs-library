@@ -362,10 +362,15 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         value: bignumAmount,
         gasPrice: feeData.gasPrice.mul(110).div(100),
       });
-      await tx.wait();
+      const result = await tx.wait();
+      if (result.status !== 1) { // transaction failed
+        __log__("Transaction result:");
+        __log__(result);
+        return false;
+      }
       return true;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -399,10 +404,15 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         .withdraw(bignumAmount, {
           gasPrice: feeData.gasPrice.mul(110).div(100),
         });
-      await tx.wait();
+      const result = await tx.wait();
+      if (result.status !== 1) { // transaction failed
+        __log__("Transaction result:");
+        __log__(result);
+        return false;
+      }
       return true;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -441,7 +451,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         value: balance / Math.pow(10, token.decimals),
       };
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -465,7 +475,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       );
       return Number(route.quote.toFixed(token1.decimals));
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -559,12 +569,16 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-
       const tx = await web3Provider.sendTransaction(signedTx);
-      await tx.wait();
+      const result = await tx.wait();
+      if (result.status !== 1) { // transaction failed
+        __log__("Transaction result:");
+        __log__(result);
+        return false;
+      }
       return true;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -582,20 +596,21 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     try {
       if (token0.isNative) {
         const ok = await Wrap(amount0);
-        if (!ok) return false;
+        if (!ok) {
+          UnwrapAll();
+          return false;
+        }
         token0 = token0.wrapped;
       }
       if (token1.isNative) {
         const ok = await Wrap(amount1);
-        if (!ok) return false;
+        if (!ok) {
+          UnwrapAll();
+          return false;
+        }
         token1 = token1.wrapped;
       }
-    } catch (e) {
-      __log__(e);
-      return false;
-    }
 
-    try {
       let token0Amount;
       let token0AmountHuman;
       let token0BigNum;
@@ -827,8 +842,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
         await UnwrapAll();
-        if (result.status !== 1) { // The transaction failed:
-          __log__(`Transaction result:`);
+        if (result.status !== 1) { // transaction failed
+          __log__("Transaction result:");
           __log__(result);
           return false;
         }
@@ -837,7 +852,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       }
       return false;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       await UnwrapAll();
       return false;
     }
@@ -850,13 +865,31 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     minPrice,
     maxPrice
   ) {
-    let token0Balance = await GetAmount(token0);
+    const token0Balance = await GetAmount(token0);
     if (token0Balance === false) return false;
+    let token0AmountToUse;
+    if (token0.isNative) {
+      if (token0.symbol === "MATIC") {
+        token0AmountToUse = (token0Balance.value > 3) ? token0Balance.value - 3 : 0;
+      } else { // ETH:
+        token0AmountToUse = (token0Balance.value > 0.003) ? token0Balance.value - 0.003 : 0;
+      }
+    } else {
+      token0AmountToUse = token0Balance.bignum;
+    }
 
-    // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
-
-    let token1Balance = await GetAmount(token1);
+    const token1Balance = await GetAmount(token1);
     if (token1Balance === false) return false;
+    let token1AmountToUse;
+    if (token1.isNative) {
+      if (token1.symbol === "MATIC") {
+        token1AmountToUse = (token1Balance.value > 3) ? token1Balance.value - 3 : 0;
+      } else { // ETH:
+        token1AmountToUse = (token1Balance.value > 0.003) ? token1Balance.value - 0.003 : 0;
+      }
+    } else {
+      token1AmountToUse = token1Balance.bignum;
+    }
 
     const result = await CreatePoolPosition(
       token0,
@@ -864,8 +897,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       feeTier,
       minPrice,
       maxPrice,
-      token0Balance.bignum,
-      token1Balance.bignum
+      token0AmountToUse,
+      token1AmountToUse
     );
 
     return result;
@@ -884,20 +917,21 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     try {
       if (token0.isNative) {
         const ok = await Wrap(amount0);
-        if (!ok) return false;
+        if (!ok) {
+          UnwrapAll();
+          return false;
+        }
         token0 = token0.wrapped;
       }
       if (token1.isNative) {
         const ok = await Wrap(amount1);
-        if (!ok) return false;
+        if (!ok) {
+          UnwrapAll();
+          return false;
+        }
         token1 = token1.wrapped;
       }
-    } catch (e) {
-      __log__(e);
-      return false;
-    }
 
-    try {
       let token0Amount;
       let token0AmountHuman;
       let token0BigNum;
@@ -1113,8 +1147,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         __log__(`Transaction: ${tx.hash}`);
         const result = await tx.wait();
         await UnwrapAll();
-        if (result.status !== 1) { // The transaction failed:
-          __log__(`Transaction result:`);
+        if (result.status !== 1) { // transaction failed
+          __log__("Transaction result:");
           __log__(result);
           return false;
         }
@@ -1123,7 +1157,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       }
       return false;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       await UnwrapAll();
       return false;
     }
@@ -1136,13 +1170,31 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     minTick,
     maxTick
   ) {
-    let token0Balance = await GetAmount(token0);
+    const token0Balance = await GetAmount(token0);
     if (token0Balance === false) return false;
+    let token0AmountToUse;
+    if (token0.isNative) {
+      if (token0.symbol === "MATIC") {
+        token0AmountToUse = (token0Balance.value > 3) ? token0Balance.value - 3 : 0;
+      } else { // ETH:
+        token0AmountToUse = (token0Balance.value > 0.003) ? token0Balance.value - 0.003 : 0;
+      }
+    } else {
+      token0AmountToUse = token0Balance.bignum;
+    }
 
-    // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
-
-    let token1Balance = await GetAmount(token1);
+    const token1Balance = await GetAmount(token1);
     if (token1Balance === false) return false;
+    let token1AmountToUse;
+    if (token1.isNative) {
+      if (token1.symbol === "MATIC") {
+        token1AmountToUse = (token1Balance.value > 3) ? token1Balance.value - 3 : 0;
+      } else { // ETH:
+        token1AmountToUse = (token1Balance.value > 0.003) ? token1Balance.value - 0.003 : 0;
+      }
+    } else {
+      token1AmountToUse = token1Balance.bignum;
+    }
 
     const result = await CreatePoolPositionTicks(
       token0,
@@ -1150,8 +1202,8 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       feeTier,
       minTick,
       maxTick,
-      token0Balance.bignum,
-      token1Balance.bignum
+      token0AmountToUse,
+      token1AmountToUse
     );
 
     return result;
@@ -1240,15 +1292,17 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       };
 
       const signedTx = await wallet.signTransaction(multicallTx);
-
       const tx = await web3Provider.sendTransaction(signedTx);
       const result = await tx.wait();
-
       await UnwrapAll();
-
+      if (result.status !== 1) { // transaction failed
+        __log__(`Transaction result:`);
+        __log__(result);
+        return false;
+      }
       return true;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       await UnwrapAll();
       return false;
     }
@@ -1338,7 +1392,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ? positionList.filter((position) => position.isActivePosition)
         : positionList;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1434,14 +1488,20 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           }
         );
       unsignedTx.chainId = network;
-      __log__("Unsigned Tx");
+      __log__("Unsigned Tx:");
       __log__(unsignedTx);
 
       const signedTx = await wallet.signTransaction(unsignedTx);
       __log__(`Signed Tx: ${signedTx}`);
 
       const tx = await web3Provider.sendTransaction(signedTx);
-      await tx.wait();
+      const result = await tx.wait();
+      await UnwrapAll();
+      if (result.status !== 1) { // transaction failed
+        __log__(`Transaction result:`);
+        __log__(result);
+        return false;
+      }
 
       const nativeToken = nativeOnChain(network);
       const wrappedToken = nativeToken.wrapped;
@@ -1455,7 +1515,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1543,7 +1603,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
           : token1.symbol]: Number(unclaimedFee1),
       };
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1579,7 +1639,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return result;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1614,7 +1674,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       return immutables.token0 === token0.address ? state.tick : -state.tick;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1687,7 +1747,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ? [tickLower, tickUpper]
         : [-tickUpper, -tickLower];
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1750,7 +1810,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ? [tickLower, tickUpper]
         : [-tickUpper, -tickLower];
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1936,15 +1996,19 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         };
 
         const signedTx = await wallet.signTransaction(multicallTx);
-
         const tx = await web3Provider.sendTransaction(signedTx);
         __log__(`Transaction: ${tx.hash}`);
-        await tx.wait();
+        const result = await tx.wait();
+        if (result.status !== 1) { // transaction failed
+          __log__(`Transaction result:`);
+          __log__(result);
+          return false;
+        }
         return true;
       }
       return false;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -1961,22 +2025,40 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const token0 = __getTokenByAddress(positionInfo.token0, network);
       const token1 = __getTokenByAddress(positionInfo.token1, network);
 
-      let token0Balance = await GetAmount(token0);
+      const token0Balance = await GetAmount(token0);
       if (token0Balance === false) return false;
+      let token0AmountToUse;
+      if (token0.isNative) {
+        if (token0.symbol === "MATIC") {
+          token0AmountToUse = (token0Balance.value > 3) ? token0Balance.value - 3 : 0;
+        } else { // ETH:
+          token0AmountToUse = (token0Balance.value > 0.003) ? token0Balance.value - 0.003 : 0;
+        }
+      } else {
+        token0AmountToUse = token0Balance.bignum;
+      }
 
-      // TODO: If token0 is the native token then do NOT use all of it, we must leave a little for the gas fee!
-
-      let token1Balance = await GetAmount(token1);
+      const token1Balance = await GetAmount(token1);
       if (token1Balance === false) return false;
+      let token1AmountToUse;
+      if (token1.isNative) {
+        if (token1.symbol === "MATIC") {
+          token1AmountToUse = (token1Balance.value > 3) ? token1Balance.value - 3 : 0;
+        } else { // ETH:
+          token1AmountToUse = (token1Balance.value > 0.003) ? token1Balance.value - 0.003 : 0;
+        }
+      } else {
+        token1AmountToUse = token1Balance.bignum;
+      }
 
       const result = await AddLiquidity(
         tokenId,
-        token0Balance.bignum,
-        token1Balance.bignum
+        token0AmountToUse,
+        token1AmountToUse
       );
       return result;
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
@@ -2040,18 +2122,26 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         ),
       };
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
 
   async function SwapAll(token0, token1) {
-    const token0Amount = await GetAmount(token0);
-    if (token0Amount === false) return false;
+    const token0Balance = await GetAmount(token0);
+    if (token0Balance === false) return false;
+    let token0AmountToUse;
+    if (token0.isNative) {
+      if (token0.symbol === "MATIC") {
+        token0AmountToUse = (token0Balance.value > 3) ? token0Balance.value - 3 : 0;
+      } else { // ETH:
+        token0AmountToUse = (token0Balance.value > 0.003) ? token0Balance.value - 0.003 : 0;
+      }
+    } else {
+      token0AmountToUse = token0Balance.bignum;
+    }
 
-    // TODO: If token0 is the native token then do NOT swap all of it, we must leave a little for the gas fee!
-
-    const result = await Swap(token0, token1, token0Amount.bignum);
+    const result = await Swap(token0, token1, token0AmountToUse);
     return result;
   }
 
@@ -2064,12 +2154,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       if (token1.isNative) {
         token1 = token1.wrapped;
       }
-    } catch (e) {
-      __log__(e);
-      return false;
-    }
 
-    try {
       const factoryContract = new ethers.Contract(
         FACTORY_ADDRESS,
         IUniswapV3FactoryABI,
@@ -2106,7 +2191,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         token1: token1.symbol,
       };
     } catch (e) {
-      __log__(e);
+      __log__("message" in e ? e.message : e);
       return false;
     }
   }
