@@ -165,12 +165,6 @@ const __getTokenByAddress = (address, network) => {
   return null;
 };
 
-function __wait_ms(ms) {
-  return new Promise(resolve => {
-      setTimeout(resolve, ms);
-  });
-}
-
 async function __getPoolImmutables(poolContract) {
   const [factory, token0, token1, fee, tickSpacing, maxLiquidityPerTick] =
     await Promise.all([
@@ -1302,12 +1296,9 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
 
       for (let i = 0; i < size; i++) {
         const result = await positionManagerContract.tokenOfOwnerByIndex(walletAddress, i);
-        // await __wait_ms(5);
-
         const tokenId = result.toNumber();
 
         const position = await positionManagerContract.positions(tokenId);
-        // await __wait_ms(5);
 
         const isActive = Number(position.liquidity) === 0 ? false : true;
 
