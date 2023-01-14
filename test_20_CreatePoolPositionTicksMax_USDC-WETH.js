@@ -12,7 +12,7 @@ async function main() {
 
   // 20. Test CreatePoolPositionTicksMax function
 
-  const wideningMultiplier = 1; // this must be 0 or higher!
+  const wideningMultiplier = 7; // this must be 0 or higher!
 
   console.log(`Getting pool data for the USDC/WETH feeTier: 0.05 pool`);
   let result = await lib.GetPoolData(lib.Tokens.USDC, lib.Tokens.WETH, 0.05);

@@ -10,9 +10,9 @@ async function main() {
     true // debug on
   );
 
-  // 15. Test AddLiquidity function
+  // 21. Test AddLiquidityMax function
 
-  const poolID = 623817;
+  const poolID = 627257;
 
   const pool = await lib.GetPoolPositionInfo(poolID)
   console.log(pool, `\n`);
