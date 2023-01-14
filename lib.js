@@ -165,6 +165,12 @@ const __getTokenByAddress = (address, network) => {
   return null;
 };
 
+function __wait_ms(ms) {
+  return new Promise(resolve => {
+      setTimeout(resolve, ms);
+  });
+}
+
 async function __getPoolImmutables(poolContract) {
   const [factory, token0, token1, fee, tickSpacing, maxLiquidityPerTick] =
     await Promise.all([
@@ -207,7 +213,6 @@ async function __getPoolState(poolContract) {
   return PoolState;
 }
 
-var __poolCache = [];
 const __getPoolPositionInfo = async (
   web3Provider,
   walletAddress,
@@ -220,25 +225,6 @@ const __getPoolPositionInfo = async (
   tokenId,
   isActive
 ) => {
-  const i = __poolCache.findIndex(
-    (item) =>
-      (item.token0.address === token0.address &&
-        item.token1.address === token1.address &&
-        item.feeTier === feeTier) ||
-      (item.token0.address === token1.address &&
-        item.token1.address === token0.address &&
-        item.feeTier === feeTier)
-  );
-  if (i > -1) {
-    return {
-      tick: __poolCache[i].tick,
-      amount0: __poolCache[i].amount0,
-      amount1: __poolCache[i].amount1,
-      unclaimedFee0: __poolCache[i].unclaimedFee0,
-      unclaimedFee1: __poolCache[i].unclaimedFee1,
-    };
-  }
-
   const positionManagerContract = new ethers.Contract(
     V3_POSITION_NFT_ADDRESS,
     INonfungiblePositionManagerABI,
@@ -278,8 +264,8 @@ const __getPoolPositionInfo = async (
     liquidity: liquidity,
   });
 
-  let unclaimedFee0 = 0,
-    unclaimedFee1 = 0;
+  let unclaimedFee0 = 0;
+  let unclaimedFee1 = 0;
   if (isActive) {
     const results = await positionManagerContract.callStatic.collect({
       tokenId,
@@ -295,16 +281,6 @@ const __getPoolPositionInfo = async (
     ).toPrecision(4);
   }
 
-  __poolCache.push({
-    token0,
-    token1,
-    feeTier,
-    tick: state.tick,
-    amount0: position.amount0.toSignificant(5),
-    amount1: position.amount1.toSignificant(5),
-    unclaimedFee0,
-    unclaimedFee1,
-  });
   return {
     tick: state.tick,
     amount0: position.amount0.toSignificant(5),
@@ -1308,7 +1284,7 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
     }
   }
 
-  async function GetNFTList(hideClosedPositions = true) {
+  async function GetNFTList(hideClosedPositions = true, filter = false) {
     try {
       const nativeToken = nativeOnChain(network);
       const wrappedToken = nativeToken.wrapped;
@@ -1322,75 +1298,73 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
         await positionManagerContract.balanceOf(walletAddress)
       ).toNumber();
 
-      const promiseList = [];
+      let positionList = [];
+
       for (let i = 0; i < size; i++) {
-        promiseList.push(
-          positionManagerContract
-            .tokenOfOwnerByIndex(walletAddress, i)
-            .then((val) => val.toNumber())
+        const result = await positionManagerContract.tokenOfOwnerByIndex(walletAddress, i);
+        // await __wait_ms(5);
+
+        const tokenId = result.toNumber();
+
+        const position = await positionManagerContract.positions(tokenId);
+        // await __wait_ms(5);
+
+        const isActive = Number(position.liquidity) === 0 ? false : true;
+
+        if (hideClosedPositions && !isActive) continue;
+
+        const token0 = __getTokenByAddress(position.token0, network);
+        const token1 = __getTokenByAddress(position.token1, network);
+
+        const token0Symbol = token0.address === wrappedToken.address ? nativeToken.symbol : token0.symbol;
+        const token1Symbol = token1.address === wrappedToken.address ? nativeToken.symbol : token1.symbol;
+
+        const feeTier = position.fee / 10000;
+
+        if (typeof filter === "object") {
+          if ("token0Symbol" in filter && filter.token0Symbol !== token0Symbol) continue;
+          if ("token1Symbol" in filter && filter.token1Symbol !== token1Symbol) continue;
+          if ("feeTier" in filter && filter.feeTier !== feeTier) continue;
+          if ("rangeWidth" in filter && filter.rangeWidth !== position.tickUpper - position.tickLower) continue;
+        }
+        const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } = await __getPoolPositionInfo(
+          web3Provider,
+          walletAddress,
+          token0,
+          token1,
+          position.fee,
+          position.tickLower,
+          position.tickUpper,
+          position.liquidity,
+          tokenId,
+          isActive
         );
+        const poolInfo = {
+          id: tokenId,
+          minTick: Number(position.tickLower),
+          maxTick: Number(position.tickUpper),
+          isActivePosition: isActive,
+          isInRange: tick >= position.tickLower && tick <= position.tickUpper,
+          token0: token0Symbol,
+          token1: token1Symbol,
+          feeTier: feeTier,
+          liquidityToken0: Number(amount0),
+          liquidityToken1: Number(amount1),
+          unclaimedFee0: Number(unclaimedFee0),
+          unclaimedFee1: Number(unclaimedFee1),
+          minPrice: Number(
+            tickToPrice(token0, token1, position.tickLower).toSignificant(5)
+          ),
+          maxPrice: Number(
+            tickToPrice(token0, token1, position.tickUpper).toSignificant(5)
+          ),
+          currentPrice: Number(
+            tickToPrice(token0, token1, tick).toSignificant(5)
+          ),
+        };
+        positionList.push(poolInfo);
       }
-      const tokenIdList = await Promise.all(promiseList);
-      const positionPromiseList = [];
-      for (let i = 0; i < size; i++) {
-        positionPromiseList.push(
-          positionManagerContract.positions(tokenIdList[i])
-        );
-      }
-      const positionInfoList = await Promise.all(positionPromiseList);
-      __poolCache = [];
-      const positionList = await Promise.all(
-        positionInfoList.map(async (position, i) => {
-          const token0 = __getTokenByAddress(position.token0, network);
-          const token1 = __getTokenByAddress(position.token1, network);
-          const isActive = Number(position.liquidity) === 0 ? false : true;
-          const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
-            await __getPoolPositionInfo(
-              web3Provider,
-              walletAddress,
-              token0,
-              token1,
-              position.fee,
-              position.tickLower,
-              position.tickUpper,
-              position.liquidity,
-              tokenIdList[i],
-              isActive
-            );
-          return {
-            id: tokenIdList[i],
-            minTick: Number(position.tickLower),
-            maxTick: Number(position.tickUpper),
-            isActivePosition: isActive,
-            isInRange: tick >= position.tickLower && tick <= position.tickUpper,
-            token0:
-              token0.address === wrappedToken.address
-                ? nativeToken.symbol
-                : token0.symbol,
-            token1:
-              token1.address === wrappedToken.address
-                ? nativeToken.symbol
-                : token1.symbol,
-            feeTier: position.fee / 10000,
-            liquidityToken0: Number(amount0),
-            liquidityToken1: Number(amount1),
-            unclaimedFee0: Number(unclaimedFee0),
-            unclaimedFee1: Number(unclaimedFee1),
-            minPrice: Number(
-              tickToPrice(token0, token1, position.tickLower).toSignificant(5)
-            ),
-            maxPrice: Number(
-              tickToPrice(token0, token1, position.tickUpper).toSignificant(5)
-            ),
-            currentPrice: Number(
-              tickToPrice(token0, token1, tick).toSignificant(5)
-            ),
-          };
-        })
-      );
-      return hideClosedPositions
-        ? positionList.filter((position) => position.isActivePosition)
-        : positionList;
+      return positionList;
     } catch (e) {
       __log__("message" in e ? e.message : e);
       return false;
@@ -2078,20 +2052,18 @@ function Init(walletAddress, privateKey, network, rpcUrl, debug = false) {
       const token0 = __getTokenByAddress(position.token0, network);
       const token1 = __getTokenByAddress(position.token1, network);
       const isActive = Number(position.liquidity) === 0 ? false : true;
-      __poolCache = [];
-      const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } =
-        await __getPoolPositionInfo(
-          web3Provider,
-          walletAddress,
-          token0,
-          token1,
-          position.fee,
-          position.tickLower,
-          position.tickUpper,
-          position.liquidity,
-          tokenId,
-          isActive
-        );
+      const { tick, amount0, amount1, unclaimedFee0, unclaimedFee1 } = await __getPoolPositionInfo(
+        web3Provider,
+        walletAddress,
+        token0,
+        token1,
+        position.fee,
+        position.tickLower,
+        position.tickUpper,
+        position.liquidity,
+        tokenId,
+        isActive
+      );
       return {
         id: tokenId,
         minTick: Number(position.tickLower),
